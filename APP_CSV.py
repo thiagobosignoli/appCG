@@ -12,8 +12,8 @@ import numpy as np
 # Configuração da página web
 st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
 
-st.title("📊 Comparador de Tabelas Analítico")
-st.write("Vincula as linhas através da coluna de identificação e identifica divergências na coluna de valor entre períodos distintos.")
+st.title("📊 Comparador de Tabelas Analítico (Alta Performance)")
+st.write("Suba arquivos CSV com até milhões de linhas e compare valores vinculando as colunas e identificando as divergências entre períodos distintos.")
 
 # Painel de controle lateral fixo
 st.sidebar.header("Parâmetros da Análise")
