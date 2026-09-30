@@ -1,3 +1,10 @@
+import os
+
+# Cria a pasta e o arquivo de configuração de forma automática
+os.makedirs(".streamlit", exist_ok=True)
+with open(".streamlit/config.toml", "w") as f:
+    f.write("[server]\nmaxUploadSize = 300\n")
+
 import streamlit as st
 import pandas as pd
 import numpy as np
