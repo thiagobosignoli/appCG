@@ -12,7 +12,7 @@ import numpy as np
 # Configuração da página web
 st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
 
-st.title("📊 Comparador de Sublotes por Inscrição")
+st.title("📊 Comparador de Tabelas Analítico")
 st.write("Vincula as linhas através da coluna de identificação e identifica divergências na coluna de valor entre períodos distintos.")
 
 # Painel de controle lateral fixo
