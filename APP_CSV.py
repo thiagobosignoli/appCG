@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 
 # Configuração da página web
-st.set_page_config(page_title="Comparador Fiscal de Sublotes", layout="wide")
+st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
 
 st.title("📊 Comparador de Sublotes por Inscrição")
 st.write("Vincula as linhas através da coluna de identificação e identifica divergências na coluna de valor entre períodos distintos.")
