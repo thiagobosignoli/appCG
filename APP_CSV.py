@@ -49,9 +49,9 @@ if tipo_analise == "Comparação por percentual (%)":
 
     # --- FILTRO CHECKBOX PARA INSCRIÇÕES NOVAS ---
     incluir_novas = st.sidebar.checkbox(
-        "Incluir inscrições novas (Inexistentes no Ano X-1)", 
+        "Incluir inscrições novas (Inexistentes no Ano Anterior)", 
         value=True,
-        help="Se marcado, mantém na tabela final do Ano X os registros novos que não possuem histórico no passado."
+        help="Se marcado, mantém na tabela final do Ano Recente os registros novos que não possuem histórico no passado."
     )
 
     # Caixas de texto para os nomes das colunas
