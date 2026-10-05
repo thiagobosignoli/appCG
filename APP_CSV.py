@@ -63,22 +63,17 @@ if tipo_analise == "Comparação por percentual (%)":
 
     with col1:
         arquivo_base = st.file_uploader(
-            "Upload da Tabela Base - Data mais Recente (Ano X) (CSV)",
+            "Upload da Tabela Base - Data mais Recente (CSV)",
             type=["csv"],
             key="upload_base_modo1"
         )
 
     with col2:
-        arquivo_comparar = st.file_uploader(
-            "Upload da Tabela de Comparação - Data mais antiga (Ano X-1) (CSV)",
-            type=["csv"],
-            key="upload_comp_modo1"
+        arquivo_comparar = st.file_uploader("Upload da Tabela de Comparação - Data mais antiga (CSV)",type=["csv"],key="upload_comp_modo1"
         )
 
     # Botão de execução fixo na barra lateral
-    botao_executar = st.sidebar.button(
-        "⚡ Executar Comparação Fiel"
-    )
+    botao_executar = st.sidebar.button("⚡ Executar Comparação Fiel")
 
     # Executa a lógica apenas quando o botão for clicado
     if botao_executar:
@@ -251,18 +246,8 @@ st.session_state.metricas_filtro = {
 if st.session_state.df_resultado_filtro is not None:
 df_resultado_filtro = st.session_state.df_resultado_filtro
 m = st.session_state.metricas_filtro
-st.success(
-f"Análise concluída! Foram analisados {m['original']} registros, "
-f"{m['excluido']} registros com o parâmetro '{parametro_exclusao}' foram excluídos "
-f"e {m['permanece']} registros permaneceram."
-)
+st.success(f"Análise concluída! Foram analisados {m['original']} registros, "f"{m['excluido']} registros com o parâmetro '{parametro_exclusao}' foram excluídos "f"e {m['permanece']} registros permaneceram.")
 st.subheader("Registros mantidos")
 st.dataframe(df_resultado_filtro.head(100))
 csv_filtro = df_resultado_filtro.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-st.download_button(
-label="📥 Baixar Resultado Filtrado (.csv)",
-data=csv_filtro,
-file_name="resultado_filtro_parametro.csv",
-mime="text/csv",
-key="btn_download_filtro"
-)
+st.download_button(label="📥 Baixar Resultado Filtrado (.csv)",data=csv_filtro,file_name="resultado_filtro_parametro.csv",mime="text/csv",key="btn_download_filtro")
