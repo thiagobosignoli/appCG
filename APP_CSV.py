@@ -121,11 +121,11 @@ if tipo_analise == "Comparação por percentual (%)":
                     df_base['Valor_Ano_X'] = pd.to_numeric(df_base[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
                     df_comp['Valor_Ano_X_Menos_1'] = pd.to_numeric(df_comp[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
 
-                    # 3. Indexa a tabela de comparação (Ano X-1)
+                    # 3. Indexa a tabela de comparação (Ano Anterior)
                     df_comp_limpo = df_comp.drop_duplicates(subset=['CHAVE_ALINHA'])
                     dict_valores_comp = dict(zip(df_comp_limpo['CHAVE_ALINHA'], df_comp_limpo['Valor_Ano_X_Menos_1']))
 
-                    # 4. Mapeamento Direto para dentro da tabela do Ano X
+                    # 4. Mapeamento Direto para dentro da tabela do Ano Recente
                     df_base['Valor_Comparar_Antigo'] = df_base['CHAVE_ALINHA'].map(dict_valores_comp)
                     df_base['Localizado_No_Comp'] = df_base['CHAVE_ALINHA'].isin(dict_valores_comp.keys())
                     df_base['Valor_Comparar_Calc_Antigo'] = df_base['Valor_Comparar_Antigo'].fillna(0.0)
@@ -169,7 +169,7 @@ if tipo_analise == "Comparação por percentual (%)":
 
                     # Classifica a conformidade fiscal do registro mapeado
                     df_resultado['Ocorrencia'] = np.where(
-                        ~df_resultado['Localizado_No_Comp'], "Inscrição Nova (Sem histórico no Ano X-1)",
+                        ~df_resultado['Localizado_No_Comp'], "Inscrição Nova (Sem histórico no Ano Aterior)",
                         np.where(df_resultado['Variacao_%'] == 0, "Valores Idênticos",
                         np.where(df_resultado['Variacao_%'] > 0, "Aumento dentro do limite", "Redução dentro do limite"))
                     )
@@ -228,13 +228,13 @@ if tipo_analise == "Comparação por percentual (%)":
                 )
                 
             with btn_col2:
-                st.subheader("2. Linhas Brutas do Ano X (Validadas)")
+                st.subheader("2. Linhas Brutas do Ano Recente (Validadas)")
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
                 st.download_button(
                     label="📥 Baixar Linhas Validadas do Ano Recente (.csv)",
                     data=csv_arquivo2,
-                    file_name="linhas_validadas_ano_x.csv",
+                    file_name="linhas_validadas_ano_Recente.csv",
                     mime="text/csv",
                     key="btn_download_2"
                 )
