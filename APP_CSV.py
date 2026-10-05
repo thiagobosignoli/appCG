@@ -209,7 +209,7 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.download_button(
                     label="📥 Baixar Linhas Filtradas do Ano Recente (.csv)",
                     data=csv_arquivo2,
-                    file_name="linhas_divergentes_ano_x.csv",
+                    file_name="linhas_divergentes_ano_Recente.csv",
                     mime="text/csv",
                     key="btn_download_2"
                 )
