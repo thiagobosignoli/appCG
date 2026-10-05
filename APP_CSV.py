@@ -198,7 +198,7 @@ if tipo_analise == "Comparação por percentual (%)":
 # ============================================================
 elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
     st.sidebar.subheader("Parâmetros do Filtro")
-    coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="EXCLUIR").strip()
+    coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="COLUNA").strip()
     parametro_exclusao = st.sidebar.text_input("Parâmetro a excluir", value="sim").strip()
 
     arquivo_filtro = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo2")
