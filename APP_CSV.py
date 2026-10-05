@@ -203,7 +203,7 @@ if tipo_analise == "Comparação por percentual (%)":
                 csv_original = relatorio_original.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
                 st.download_button(label="📥 Baixar Relatório Analítico (.csv)",data=csv_original,file_name="relatorio_divergencias_temporal.csv", mime="text/csv", key="btn_download_1")
             with btn_col2:
-                st.subheader("2. Linhas Brutas do Ano X (Com erro)")
+                st.subheader("2. Linhas Brutas do Ano (Filtradas)")
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
                 st.download_button(
