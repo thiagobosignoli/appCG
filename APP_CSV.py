@@ -8,7 +8,7 @@ st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
 st.title("📊 Comparador de Tabelas Analítico (Alta Performance)")
 st.write("Vincula as linhas através da coluna de identificação e identifica divergências na coluna de valor entre períodos distintos.")
 
-# Painel de controle lateral fixo
+# Painel de controle lateral fixed
 st.sidebar.header("Parâmetros da Análise")
 
 # --- ESCOLHA DO TIPO DE ANÁLISE ---
@@ -47,6 +47,13 @@ if tipo_analise == "Comparação por percentual (%)":
         step=0.5
     )
 
+    # --- FILTRO CHECKBOX PARA INSCRIÇÕES NOVAS ---
+    incluir_novas = st.sidebar.checkbox(
+        "Incluir inscrições novas (Inexistentes no Ano X-1)", 
+        value=True,
+        help="Se marcado, mantém na tabela final do Ano X os registros novos que não possuem histórico no passado."
+    )
+
     # Caixas de texto para os nomes das colunas
     coluna_chave = st.sidebar.text_input(
         "Nome da coluna de Inscrição / Chave",
@@ -69,7 +76,10 @@ if tipo_analise == "Comparação por percentual (%)":
         )
 
     with col2:
-        arquivo_comparar = st.file_uploader("Upload da Tabela de Comparação - Data mais antiga (CSV)",type=["csv"],key="upload_comp_modo1"
+        arquivo_comparar = st.file_uploader(
+            "Upload da Tabela de Comparação - Data mais antiga (CSV)",
+            type=["csv"],
+            key="upload_comp_modo1"
         )
 
     # Botão de execução fixo na barra lateral
@@ -127,13 +137,15 @@ if tipo_analise == "Comparação por percentual (%)":
                     ambos_zeros = (v_recente == 0) & (v_antigo == 0)
                     surgiu_no_ano_x = (v_antigo == 0) & (v_recente != 0)
                     zerou_no_ano_x = (v_antigo != 0) & (v_recente == 0)
-        # Divisão segura usando o Ano X-1 (v_antigo) como base analítica
+
+                    # Divisão segura usando o Ano X-1 (v_antigo) como base analítica
                     divisao_segura = np.divide(
                         (v_recente - v_antigo),
                         v_antigo,
                         out=np.zeros_like(v_antigo, dtype=float),
-                        where=(v_recente != 0) & (v_antigo != 0) # Variáveis corrigidas aqui!
+                        where=(v_recente != 0) & (v_antigo != 0)
                     ) * 100.0
+
                     variacao = np.where(
                         ambos_zeros, 0.0,
                         np.where(surgiu_no_ano_x, 100.0,
@@ -143,16 +155,23 @@ if tipo_analise == "Comparação por percentual (%)":
 
                     df_base['Variacao_%'] = np.round(variacao, 2)
 
-                   # 6. Identificação dos registros corretos (Abaixo ou igual ao limite E localizados)
-                    condicao_consistente = (
-                        (np.abs(df_base['Variacao_%']) <= margem_limite) &
-                        (df_base['Localizado_No_Comp'])
-                    )
+                    # 6. Identificação dos registros corretos/consistentes baseado no Checkbox
+                    if incluir_novas:
+                        condicao_consistente = (
+                            (np.abs(df_base['Variacao_%']) <= margem_limite) & (df_base['Localizado_No_Comp'])
+                        ) | (~df_base['Localizado_No_Comp'])
+                    else:
+                        condicao_consistente = (
+                            (np.abs(df_base['Variacao_%']) <= margem_limite) & (df_base['Localizado_No_Comp'])
+                        )
 
                     df_resultado = df_base[condicao_consistente].copy()
 
-                    # Classifica a ocorrência indicando que o registro está em conformidade
-                    df_resultado['Ocorrencia'] = np.where(df_resultado['Variacao_%'] == 0, "Valores Idênticos",np.where(df_resultado['Variacao_%'] > 0, "Aumento dentro do limite", "Redução dentro do limite")
+                    # Classifica a conformidade fiscal do registro mapeado
+                    df_resultado['Ocorrencia'] = np.where(
+                        ~df_resultado['Localizado_No_Comp'], "Inscrição Nova (Sem histórico no Ano X-1)",
+                        np.where(df_resultado['Variacao_%'] == 0, "Valores Idênticos",
+                        np.where(df_resultado['Variacao_%'] > 0, "Aumento dentro do limite", "Redução dentro do limite"))
                     )
 
                     # --- RELATÓRIO 1 ---
@@ -160,7 +179,7 @@ if tipo_analise == "Comparação por percentual (%)":
                         'Inscricao_Sublote': df_resultado[coluna_chave],
                         'Tipo_Inconsistencia': df_resultado['Ocorrencia'],
                         'Valor_Ano_Recente': df_resultado['Valor_Ano_X'],
-                        'Valor_Ano_Antigo': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Valor_Comparar_Antigo'], "Não Localizado"),
+                        'Valor_Ano_Antigo': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Valor_Comparar_Antigo'], "Inexistente"),
                         'Diferenca_Percentual': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Variacao_%'].astype(str) + "%", "N/A")
                     })
 
@@ -175,25 +194,24 @@ if tipo_analise == "Comparação por percentual (%)":
                     st.session_state.relatorio_arquivo2_divergente = relatorio_arquivo2_divergente_gerado
                     st.session_state.total_base = len(df_base)
 
-       # --- BLOCO DE EXIBIÇÃO E DOWNLOAD MODO 1 ---
+    # --- BLOCO DE EXIBIÇÃO E DOWNLOAD MODO 1 ---
     if st.session_state.relatorio_original is not None:
         relatorio_original = st.session_state.relatorio_original
         relatorio_arquivo2_divergente = st.session_state.relatorio_arquivo2_divergente
         total_base = st.session_state.total_base
 
         if not relatorio_original.empty:
-            st.success(f"Análise Concluída! Varremos {total_base} linhas e isolamos {len(relatorio_original)} divergências.")
+            st.success(f"Análise Concluída! Varremos {total_base} linhas e isolamos {len(relatorio_original)} registros validados e consistentes.")
             btn_col1, btn_col2 = st.columns(2)
 
             with btn_col1:
-                st.subheader("1. Relatório Analítico Calculado")
-                
-                # --- FUNÇÃO DE FORMATAÇÃO VISUAL (Cores nas Linhas) ---
+                st.subheader("1. Relatório Analítico Consistente")
+     # --- FUNÇÃO DE FORMATAÇÃO VISUAL (Cores nas Linhas de Sucesso) ---
                 def colorir_linhas(row):
-                    if row['Tipo_Inconsistencia'] == "Aumento acima do limite":
-                        return ['background-color: rgba(255, 75, 75, 0.2)'] * len(row) # Vermelho claro
-                    elif row['Tipo_Inconsistencia'] == "Redução acima do limite":
-                        return ['background-color: rgba(30, 144, 255, 0.2)'] * len(row) # Azul claro
+                    if "Inscrição Nova" in row['Tipo_Inconsistencia']:
+                        return ['background-color: rgba(255, 165, 0, 0.15)'] * len(row) # Laranja suave para chaves novas
+                    elif "Aumento" in row['Tipo_Inconsistencia'] or "Redução" in row['Tipo_Inconsistencia']:
+                        return ['background-color: rgba(76, 175, 80, 0.1)'] * len(row) # Verde suave para variações aceitas
                     return [''] * len(row)
 
                 # Aplica a estilização visual antes de exibir
@@ -201,20 +219,28 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.dataframe(df_estilizado)
 
                 csv_original = relatorio_original.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-                st.download_button(label="📥 Baixar Relatório Analítico (.csv)",data=csv_original,file_name="relatorio_divergencias_temporal.csv", mime="text/csv", key="btn_download_1")
+                st.download_button(
+                    label="📥 Baixar Relatório Consistente (.csv)",
+                    data=csv_original,
+                    file_name="relatorio_registros_consistentes.csv",
+                    mime="text/csv",
+                    key="btn_download_1"
+                )
+                
             with btn_col2:
-                st.subheader("2. Linhas Brutas do Ano (Filtradas)")
+                st.subheader("2. Linhas Brutas do Ano X (Validadas)")
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
                 st.download_button(
-                    label="📥 Baixar Linhas Filtradas do Ano Recente (.csv)",
+                    label="📥 Baixar Linhas Validadas do Ano Recente (.csv)",
                     data=csv_arquivo2,
-                    file_name="linhas_divergentes_ano_Recente.csv",
+                    file_name="linhas_validadas_ano_x.csv",
                     mime="text/csv",
                     key="btn_download_2"
                 )
         else:
-            st.success(f"Parabéns! Todos os registros foram confrontados e os valores estão consistentes dentro da margem de {margem_limite}%.")
+            st.success(f"Atenção: Nenhum registro atendeu aos critérios de consistência estipulados.")
+
 # ============================================================
 # MODO 2 - FILTRO POR PARÂMETRO
 # ============================================================
