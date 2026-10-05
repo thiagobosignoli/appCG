@@ -159,8 +159,8 @@ if tipo_analise == "Comparação por percentual (%)":
                     relatorio_original_gerado = pd.DataFrame({
                         'Inscricao_Sublote': df_resultado[coluna_chave],
                         'Tipo_Inconsistencia': df_resultado['Ocorrencia'],
-                        'Valor_Ano_X_Recente': df_resultado['Valor_Ano_X'],
-                        'Valor_Ano_X_Menos_1': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Valor_Comparar_Antigo'], "Não Localizado"),
+                        'Valor_Ano_Recente': df_resultado['Valor_Ano_X'],
+                        'Valor_Ano_Antigo': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Valor_Comparar_Antigo'], "Não Localizado"),
                         'Diferenca_Percentual': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Variacao_%'].astype(str) + "%", "N/A")
                     })
 
