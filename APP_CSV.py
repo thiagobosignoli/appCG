@@ -217,43 +217,43 @@ if tipo_analise == "Comparação por percentual (%)":
 # MODO 2 - FILTRO POR PARÂMETRO
 # ============================================================
 else:
-st.sidebar.subheader("Parâmetros do Filtro")
-coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="EXCLUIR").strip()
-parametro_exclusao = st.sidebar.text_input("Parâmetro a excluir", value="sim").strip()
-arquivo_filtro = st.file_uploader("Upload da Tabela para análise (CSV)",type=["csv"],key="upload_modo2")
-botao_filtrar = st.sidebar.button("⚡ Executar Filtro")
-# Executa o filtro e salva na Session State
-if botao_filtrar:
-if not arquivo_filtro:
-st.sidebar.error("Por favor, faça o upload do arquivo CSV antes de executar.")
-elif not coluna_filtro:
-st.sidebar.error("Por favor, informe o nome da coluna que será analisada.")
-elif not parametro_exclusao:
-st.sidebar.error("Por favor, informe o parâmetro que deverá ser excluído.")
-else:
-with st.spinner("Analisando registros... Aguarde."):
-df_filtro = pd.read_csv(arquivo_filtro, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
-df_filtro.columns = df_filtro.columns.str.strip()
-if coluna_filtro not in df_filtro.columns:
-st.error(f"Erro Crítico: A coluna '{coluna_filtro}' não foi encontrada no arquivo.")
-else:
-valores_coluna = df_filtro[coluna_filtro].astype(str).str.strip().str.lower()
-parametro_comparacao = parametro_exclusao.strip().lower()
-registros_excluir = (valores_coluna == parametro_comparacao)
-df_resultado_filtro_gerado = df_filtro[~registros_excluir].copy()
-# Armazena os dados e métricas no session_state para não sumirem após ações
-st.session_state.df_resultado_filtro = df_resultado_filtro_gerado
-st.session_state.metricas_filtro = {
-"original": len(df_filtro),
-"excluido": registros_excluir.sum(),
-"permanece": len(df_resultado_filtro_gerado)
-}
-# --- BLOCO DE EXIBIÇÃO E DOWNLOAD MODO 2 (Baseado na Session State) ---
-if st.session_state.df_resultado_filtro is not None:
-df_resultado_filtro = st.session_state.df_resultado_filtro
-m = st.session_state.metricas_filtro
-st.success(f"Análise concluída! Foram analisados {m['original']} registros, "f"{m['excluido']} registros com o parâmetro '{parametro_exclusao}' foram excluídos "f"e {m['permanece']} registros permaneceram.")
-st.subheader("Registros mantidos")
-st.dataframe(df_resultado_filtro.head(100))
-csv_filtro = df_resultado_filtro.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-st.download_button(label="📥 Baixar Resultado Filtrado (.csv)",data=csv_filtro,file_name="resultado_filtro_parametro.csv",mime="text/csv",key="btn_download_filtro")
+    st.sidebar.subheader("Parâmetros do Filtro")
+    coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="EXCLUIR").strip()
+    parametro_exclusao = st.sidebar.text_input("Parâmetro a excluir", value="sim").strip()
+    arquivo_filtro = st.file_uploader("Upload da Tabela para análise (CSV)",type=["csv"],key="upload_modo2")
+    botao_filtrar = st.sidebar.button("⚡ Executar Filtro")
+    # Executa o filtro e salva na Session State
+    if botao_filtrar:
+        if not arquivo_filtro:
+        st.sidebar.error("Por favor, faça o upload do arquivo CSV antes de executar.")
+        elif not coluna_filtro:
+            st.sidebar.error("Por favor, informe o nome da coluna que será analisada.")
+        elif not parametro_exclusao:
+            st.sidebar.error("Por favor, informe o parâmetro que deverá ser excluído.")
+        else:
+            with st.spinner("Analisando registros... Aguarde."):
+            df_filtro = pd.read_csv(arquivo_filtro, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+            df_filtro.columns = df_filtro.columns.str.strip()
+            if coluna_filtro not in df_filtro.columns:
+            st.error(f"Erro Crítico: A coluna '{coluna_filtro}' não foi encontrada no arquivo.")
+            else:
+                valores_coluna = df_filtro[coluna_filtro].astype(str).str.strip().str.lower()
+                parametro_comparacao = parametro_exclusao.strip().lower()
+                registros_excluir = (valores_coluna == parametro_comparacao)
+                df_resultado_filtro_gerado = df_filtro[~registros_excluir].copy()
+                # Armazena os dados e métricas no session_state para não sumirem após ações
+                st.session_state.df_resultado_filtro = df_resultado_filtro_gerado
+                st.session_state.metricas_filtro = {
+                "original": len(df_filtro),
+                "excluido": registros_excluir.sum(),
+                "permanece": len(df_resultado_filtro_gerado)
+                }
+    # --- BLOCO DE EXIBIÇÃO E DOWNLOAD MODO 2 (Baseado na Session State) ---
+    if st.session_state.df_resultado_filtro is not None:
+    df_resultado_filtro = st.session_state.df_resultado_filtro
+    m = st.session_state.metricas_filtro
+    st.success(f"Análise concluída! Foram analisados {m['original']} registros, "f"{m['excluido']} registros com o parâmetro '{parametro_exclusao}' foram excluídos "f"e {m['permanece']} registros permaneceram.")
+    st.subheader("Registros mantidos")
+    st.dataframe(df_resultado_filtro.head(100))
+    csv_filtro = df_resultado_filtro.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+    st.download_button(label="📥 Baixar Resultado Filtrado (.csv)",data=csv_filtro,file_name="resultado_filtro_parametro.csv",mime="text/csv",key="btn_download_filtro")
