@@ -127,14 +127,13 @@ if tipo_analise == "Comparação por percentual (%)":
                     ambos_zeros = (v_recente == 0) & (v_antigo == 0)
                     surgiu_no_ano_x = (v_antigo == 0) & (v_recente != 0)
                     zerou_no_ano_x = (v_antigo != 0) & (v_recente == 0)
-
+        # Divisão segura usando o Ano X-1 (v_antigo) como base analítica
                     divisao_segura = np.divide(
                         (v_recente - v_antigo),
                         v_antigo,
                         out=np.zeros_like(v_antigo, dtype=float),
-                        where=(v_base != 0) & (v_comp != 0)
+                        where=(v_recente != 0) & (v_antigo != 0) # Variáveis corrigidas aqui!
                     ) * 100.0
-
                     variacao = np.where(
                         ambos_zeros, 0.0,
                         np.where(surgiu_no_ano_x, 100.0,
