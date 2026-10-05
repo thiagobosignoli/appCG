@@ -143,13 +143,16 @@ if tipo_analise == "Comparação por percentual (%)":
 
                     df_base['Variacao_%'] = np.round(variacao, 2)
 
-                    # 6. Identificação das divergências
-                    condicao_divergencia = ((np.abs(df_base['Variacao_%']) > margem_limite) | (~df_base['Localizado_No_Comp']))
-                    df_resultado = df_base[condicao_divergencia].copy()
+                   # 6. Identificação dos registros corretos (Abaixo ou igual ao limite E localizados)
+                    condicao_consistente = (
+                        (np.abs(df_base['Variacao_%']) <= margem_limite) &
+                        (df_base['Localizado_No_Comp'])
+                    )
 
-                    df_resultado['Ocorrencia'] = np.where(
-                        ~df_resultado['Localizado_No_Comp'], "Inscrição ausente no Ano X-1",
-                        np.where(df_resultado['Variacao_%'] > 0, "Aumento acima do limite", "Redução acima do limite")
+                    df_resultado = df_base[condicao_consistente].copy()
+
+                    # Classifica a ocorrência indicando que o registro está em conformidade
+                    df_resultado['Ocorrencia'] = np.where(df_resultado['Variacao_%'] == 0, "Valores Idênticos",np.where(df_resultado['Variacao_%'] > 0, "Aumento dentro do limite", "Redução dentro do limite")
                     )
 
                     # --- RELATÓRIO 1 ---
