@@ -173,7 +173,7 @@ if tipo_analise == "Comparação por percentual (%)":
                     st.session_state.relatorio_arquivo2_divergente = relatorio_arquivo2_divergente_gerado
                     st.session_state.total_base = len(df_base)
 
-    # --- BLOCO DE EXIBIÇÃO E DOWNLOAD MODO 1 ---
+       # --- BLOCO DE EXIBIÇÃO E DOWNLOAD MODO 1 ---
     if st.session_state.relatorio_original is not None:
         relatorio_original = st.session_state.relatorio_original
         relatorio_arquivo2_divergente = st.session_state.relatorio_arquivo2_divergente
@@ -199,14 +199,20 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.dataframe(df_estilizado)
 
                 csv_original = relatorio_original.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-                st.download_button(label="📥 Baixar Relatório Analítico (.csv)",data=csv_original,file_name="relatorio_divergencias_temporal.csv",mime="text/csv",key="btn_download_1")
-with btn_col2:
-st.subheader("2. Linhas Brutas do Ano X (Com erro)")
-st.dataframe(relatorio_arquivo2_divergente.head(100))
-csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-st.download_button(label="📥 Baixar Linhas Extraídas do Ano X (.csv)",data=csv_arquivo2,file_name="linhas_divergentes_ano_x.csv",mime="text/csv",key="btn_download_2")
-else:
-st.success(f"Parabéns! Todos os registros foram confrontados e os valores estão consistentes dentro da margem de {margem_limite}%.")
+                st.download_button(label="📥 Baixar Relatório Analítico (.csv)",data=csv_original,file_name="relatorio_divergencias_temporal.csv", mime="text/csv", key="btn_download_1")
+            with btn_col2:
+                st.subheader("2. Linhas Brutas do Ano X (Com erro)")
+                st.dataframe(relatorio_arquivo2_divergente.head(100))
+                csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+                st.download_button(
+                    label="📥 Baixar Linhas Extraídas do Ano X (.csv)",
+                    data=csv_arquivo2,
+                    file_name="linhas_divergentes_ano_x.csv",
+                    mime="text/csv",
+                    key="btn_download_2"
+                )
+        else:
+            st.success(f"Parabéns! Todos os registros foram confrontados e os valores estão consistentes dentro da margem de {margem_limite}%.")
 ============================================================
 MODO 2 - FILTRO POR PARÂMETRO
 ============================================================
