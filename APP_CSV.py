@@ -207,7 +207,7 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
                 st.download_button(
-                    label="📥 Baixar Linhas Extraídas do Ano X (.csv)",
+                    label="📥 Baixar Linhas Filtradas do Ano Recente (.csv)",
                     data=csv_arquivo2,
                     file_name="linhas_divergentes_ano_x.csv",
                     mime="text/csv",
