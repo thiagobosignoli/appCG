@@ -213,9 +213,9 @@ if tipo_analise == "Comparação por percentual (%)":
                 )
         else:
             st.success(f"Parabéns! Todos os registros foram confrontados e os valores estão consistentes dentro da margem de {margem_limite}%.")
-============================================================
-MODO 2 - FILTRO POR PARÂMETRO
-============================================================
+# ============================================================
+# MODO 2 - FILTRO POR PARÂMETRO
+# ============================================================
 else:
 st.sidebar.subheader("Parâmetros do Filtro")
 coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="EXCLUIR").strip()
