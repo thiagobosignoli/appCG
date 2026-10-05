@@ -43,7 +43,7 @@ if tipo_analise == "Comparação por percentual (%)":
         "Defina a variação máxima aceitável (X%)",
         min_value=0.0,
         max_value=100.0,
-        value=5.0,
+        value=4.2,
         step=0.5
     )
 
