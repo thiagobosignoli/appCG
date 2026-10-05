@@ -278,8 +278,8 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
 # ============================================================
 else:
     st.sidebar.subheader("Parâmetros de Data")
-    coluna_data = st.sidebar.text_input("Nome da coluna de data (dd/mm/aaaa)", value="DT_ESCRITURACAO").strip()
-    ano_excluir = st.sidebar.text_input("Digitar o Ano a excluir (aaaa)", value="2023").strip()
+    coluna_data = st.sidebar.text_input("Nome da coluna de data (dd/mm/aaaa)", value="DTA_ULTIMA_ATUALIZACAO").strip()
+    ano_excluir = st.sidebar.text_input("Digitar o Ano a excluir (aaaa)", value="2026").strip()
 
     arquivo_data = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo4")
     botao_data = st.sidebar.button("⚡ Executar Filtro por Ano")
