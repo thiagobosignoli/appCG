@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import io
 
 # Configuração da página web
 st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
