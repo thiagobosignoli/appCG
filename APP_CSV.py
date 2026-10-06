@@ -11,7 +11,7 @@ st.write("Vincula as linhas através da coluna de identificação e processa fil
 # Painel de controle lateral fixo
 st.sidebar.header("Parâmetros da Análise")
 
-# --- ESCOLHA DO TIPO DE ANÁLISE (Com os novos botões solicitados) ---
+# --- ESCOLHA DO TIPO DE ANÁLISE ---
 tipo_analise = st.sidebar.radio(
     "Tipo de análise:",
     [
@@ -24,12 +24,10 @@ tipo_analise = st.sidebar.radio(
 )
 
 # --- SISTEMA ANTISOBREPOSIÇÃO: DETECTOR DE MUDANÇAS DE INPUT ---
-# Armazena os hashes ou estados anteriores para limpar a tela automaticamente se o usuário mudar de arquivo ou modo
 def verificar_e_limpar_estado(chave_atual, valor_atual):
     if f"prev_{chave_atual}" not in st.session_state:
         st.session_state[f"prev_{chave_atual}"] = valor_atual
     elif st.session_state[f"prev_{chave_atual}"] != valor_atual:
-        # Se mudou, limpa os dados salvos da tela para evitar sobreposição
         st.session_state[f"prev_{chave_atual}"] = valor_atual
         for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano"]:
             if k in st.session_state:
@@ -48,7 +46,6 @@ for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "
 # ============================================================
 if tipo_analise == "Comparação por percentual (%)":
 
-    # Divisão em duas caixas de texto/número na mesma linha para os limites
     st.sidebar.subheader("Faixa de Exclusão Percentual")
     col_inf, col_sup = st.sidebar.columns(2)
     with col_inf:
@@ -56,25 +53,21 @@ if tipo_analise == "Comparação por percentual (%)":
     with col_sup:
         limite_superior = st.number_input("Limite Superior (Y%)", min_value=0.0, max_value=100.0, value=4.6, step=0.1)
 
-    # Filtro checkbox para inscrições novas
     incluir_novas = st.sidebar.checkbox(
-        "Incluir inscrições novas (Inexistentes no Ano Anterior)", 
+        "Include novas inscrições (Inexistentes no Ano Anterior)", 
         value=True,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
 
-    # Caixas de texto para os nomes das colunas
     coluna_chave = st.sidebar.text_input("Nome da coluna de Inscrição / Chave", value="NUM_INSCRICAO").strip()
     coluna_analise = st.sidebar.text_input("Nome da coluna de Valor / Análise", value="VLR_IMPOSTO").strip()
 
-    # Campos de Upload na tela principal
     col1, col2 = st.columns(2)
     with col1:
         arquivo_base = st.file_uploader("Upload da Tabela Base - Data mais Recente (CSV)", type=["csv"], key="upload_base_modo1")
     with col2:
         arquivo_comparar = st.file_uploader("Upload da Tabela de Comparação - Data mais antiga (CSV)", type=["csv"], key="upload_comp_modo1")
 
-    # Botão de execução fixo na barra lateral
     botao_executar = st.sidebar.button("⚡ Executar Comparação Fiel")
 
     if botao_executar:
@@ -120,13 +113,12 @@ if tipo_analise == "Comparação por percentual (%)":
                     surgiu_no_ano_x = (v_antigo == 0) & (v_recente != 0)
                     zerou_no_ano_x = (v_antigo != 0) & (v_recente == 0)
 
-                    divisao_segura = np.divide((v_recente - v_antigo),v_antigo,out=np.zeros_like(v_antigo, dtype=float),where=(v_recente != 0) & (v_antigo != 0)) * 100.0
+                    divisao_segura = np.divide((v_recente - v_antigo), v_antigo, out=np.zeros_like(v_antigo, dtype=float), where=(v_recente != 0) & (v_antigo != 0)) * 100.0
                     variacao = np.where(ambos_zeros, 0.0, np.where(surgiu_no_ano_x, 100.0, np.where(zerou_no_ano_x, -100.0, divisao_segura)))
 
                     df_base['Variacao_%'] = np.round(variacao, 2)
                     variacao_absoluta = np.abs(df_base['Variacao_%'])
 
-                    # Regra Atualizada: EXCLUI as linhas que estiverem DENTRO da faixa definida (ex: de 4.0 a 4.6)
                     esta_na_faixa_exclusao = (variacao_absoluta >= limite_inferior) & (variacao_absoluta <= limite_superior)
 
                     if incluir_novas:
@@ -165,7 +157,7 @@ if tipo_analise == "Comparação por percentual (%)":
         total_base = st.session_state.total_base
 
         if not relatorio_original.empty:
-            st.success(f"Análise Concluída! Varremos {total_base} linhas e mantivemos {len(relatorio_original)} registros (excluindo os contidos na faixa de {limite_inferior}% a {limite_superior}%).")
+            st.success(f"Análise Concluída! Varremos {total_base} lines e mantivemos {len(relatorio_original)} registros (excluindo os contidos na faixa de {limite_inferior}% a {limite_superior}%).")
             btn_col1, btn_col2 = st.columns(2)
 
             with btn_col1:
@@ -194,14 +186,15 @@ if tipo_analise == "Comparação por percentual (%)":
 # ============================================================
 # MODO 2 - FILTRO POR PARÂMETRO (Sim/Não)
 # ============================================================
-elif tipo_analise == "Filtro por Parâmetro":
+elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
     st.sidebar.subheader("Parâmetros do Filtro")
     coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="COLUNA").strip()
     parametro_exclusao = st.sidebar.text_input("Parâmetro a excluir", value="sim").strip()
 
     arquivo_filtro = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo2")
     if arquivo_filtro:
-    verificar_e_limpar_estado("file_modo2", arquivo_filtro.name)
+        verificar_e_limpar_estado("file_modo2", arquivo_filtro.name)
+        
     botao_filtrar = st.sidebar.button("⚡ Executar Filtro")
 
     if botao_filtrar:
@@ -243,8 +236,8 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
     teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0)
 
     arquivo_teto = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo3")
-     if arquivo_valor:
-        verificar_e_limpar_estado("file_modo3", arquivo_valor.name)
+    if arquivo_teto:
+        verificar_e_limpar_estado("file_modo3", arquivo_teto.name)
          
     botao_teto = st.sidebar.button("⚡ Executar Filtro de Teto")
 
@@ -261,19 +254,19 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
                 else:
                     valores_num = pd.to_numeric(df_teto[coluna_valor_teto].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
                     registros_excluir = (valores_num <= teto_num)
-                    df_resultado_teto = df_teto[~registros_excluir].copy()
+                    df_resultado_teto_gerado = df_teto[~registros_excluir].copy()
 
-                    st.session_state.df_resultado_filtro = df_resultado_teto
-                    st.session_state.metricas_filtro = {"original": len(df_teto), "excluido": registros_excluir.sum(), "permanece": len(df_resultado_teto)}
+                    st.session_state.df_resultado_valor = df_resultado_teto_gerado
+                    st.session_state.metricas_valor = {"original": len(df_teto), "excluido": registros_excluir.sum(), "permanece": len(df_resultado_teto_gerado)}
 
-    if st.session_state.df_resultado_filtro is not None and tipo_analise == "Excluir por Valor Até (Teto)":
-        df_resultado_filtro = st.session_state.df_resultado_filtro
-        m = st.session_state.metricas_filtro
+    if st.session_state.df_resultado_valor is not None:
+        df_resultado_valor = st.session_state.df_resultado_valor
+        m = st.session_state.metricas_valor
         st.success(f"Filtro aplicado! Analisados {m['original']} registros, excluídos {m['excluido']} registros com valor até R$ {teto_num:,.2f}.")
         st.subheader("Registros com valores acima do teto mantidos")
-        st.dataframe(df_resultado_filtro.head(100))
+        st.dataframe(df_resultado_valor.head(100))
 
-        csv_filtro = df_resultado_filtro.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+        csv_filtro = df_resultado_valor.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
         st.download_button(label="📥 Baixar Tabela Filtrada por Valor (.csv)", data=csv_filtro, file_name="resultado_filtro_teto.csv", mime="text/csv", key="btn_download_teto")
 
 # ============================================================
@@ -287,6 +280,7 @@ else:
     arquivo_data = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo4")
     if arquivo_data:
         verificar_e_limpar_estado("file_modo4", arquivo_data.name)
+        
     botao_data = st.sidebar.button("⚡ Executar Filtro por Ano")
 
     if botao_data:
@@ -300,20 +294,20 @@ else:
                 if coluna_data not in df_data.columns:
                     st.error(f"Erro Crítico: A coluna '{coluna_data}' não foi encontrada.")
                 else:
-                    # Extrai os últimos 4 dígitos no formato dd/mm/aaaa para isolar o ano
                     anos_extraidos = df_data[coluna_data].astype(str).str.strip().str.slice(-4)
                     registros_excluir = (anos_extraidos == ano_excluir)
-                    df_resultado_data = df_data[~registros_excluir].copy()
+                    df_resultado_data_gerado = df_data[~registros_excluir].copy()
 
-                    st.session_state.df_resultado_filtro = df_resultado_data
-                    st.session_state.metricas_filtro = {"original": len(df_data), "excluido": registros_excluir.sum(), "permanece": len(df_resultado_data)}
+                    st.session_state.df_resultado_ano = df_resultado_data_gerado
+                    st.session_state.metricas_ano = {"original": len(df_data), "excluido": registros_excluir.sum(), "permanece": len(df_resultado_data_gerado)}
 
-    if st.session_state.df_resultado_filtro is not None and tipo_analise == "Excluir por Ano (Data)":
-        df_resultado_filtro = st.session_state.df_resultado_filtro
-        m = st.session_state.metricas_filtro
+    if st.session_state.df_resultado_ano is not None:
+        df_resultado_ano = st.session_state.df_resultado_ano
+        m = st.session_state.metricas_ano
         st.success(f"Filtro temporal concluído! Analisados {m['original']} registros, excluídos {m['excluido']} registros pertencentes ao ano de {ano_excluir}.")
         st.subheader("Registros mantidos (Anos restantes)")
-        st.dataframe(df_resultado_filtro.head(100))
+        st.dataframe(df_resultado_ano.head(100))
 
-        csv_filtro = df_resultado_filtro.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+        csv_filtro = df_resultado_ano.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
         st.download_button(label="📥 Baixar Tabela Filtrada por Ano (.csv)", data=csv_filtro, file_name="resultado_filtro_ano.csv", mime="text/csv", key="btn_download_ano")
+
