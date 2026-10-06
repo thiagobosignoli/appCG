@@ -5,7 +5,7 @@ import numpy as np
 # Configuração da página web
 st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
 
-st.title("📊 Comparador de Tabelas Analítico (Alta Performance)")
+st.title("📊 Comparador de Tabelas Analítico (High Performance)")
 st.write("Vincula as linhas através da coluna de identificação e processa filtros e cruzamentos avançados de acordo com os parâmetros definidos.")
 
 # Painel de controle lateral fixo
