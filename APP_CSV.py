@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import io
 
 # Configuração da página web
 st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
@@ -55,7 +54,7 @@ if tipo_analise == "Comparação por percentual (%)":
         limite_superior = st.number_input("Limite Superior (Y%)", min_value=0.0, max_value=100.0, value=4.6, step=0.1)
 
     incluir_novas = st.sidebar.checkbox(
-        "Incluir novas inscrições (Inexistentes no Ano Anterior)", 
+        "Include novas inscrições (Inexistentes no Ano Anterior)", 
         value=True,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
@@ -79,13 +78,9 @@ if tipo_analise == "Comparação por percentual (%)":
         elif not coluna_chave or not coluna_analise:
             st.sidebar.error("Por favor, preencha os nomes de ambas as colunas na barra lateral.")
         else:
-            with st.spinner("Localizando inscrições e cruzando dados fiscais... Aguarde."):   
-                # Carrega os arquivos convertendo os bytes em texto antes do Pandas processar
-                conteudo_base = io.StringIO(arquivo_base.getvalue().decode('utf-8-sig', errors='ignore'))
-                conteudo_comp = io.StringIO(arquivo_comparar.getvalue().decode('utf-8-sig', errors='ignore'))
-
-                df_base = pd.read_csv(conteudo_base, sep=None, engine='python', dtype=str, on_bad_lines='skip')
-                df_comp = pd.read_csv(conteudo_comp, sep=None, engine='python', dtype=str, on_bad_lines='skip')
+            with st.spinner("Localizando inscrições e cruzando dados fiscais... Aguarde."):
+                df_base = pd.read_csv(arquivo_base, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+                df_comp = pd.read_csv(arquivo_comparar, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
 
                 df_base.columns = df_base.columns.str.strip()
                 df_comp.columns = df_comp.columns.str.strip()
@@ -315,4 +310,3 @@ else:
 
         csv_filtro = df_resultado_ano.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
         st.download_button(label="📥 Baixar Tabela Filtrada por Ano (.csv)", data=csv_filtro, file_name="resultado_filtro_ano.csv", mime="text/csv", key="btn_download_ano")
-
