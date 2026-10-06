@@ -54,7 +54,7 @@ if tipo_analise == "Comparação por percentual (%)":
         limite_superior = st.number_input("Limite Superior (Y%)", min_value=0.0, max_value=100.0, value=4.6, step=0.1)
 
     incluir_novas = st.sidebar.checkbox(
-        "Include novas inscrições (Inexistentes no Ano Anterior)", 
+        "Incluir novas inscrições (Inexistentes no Ano Anterior)", 
         value=True,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
