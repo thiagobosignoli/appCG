@@ -78,9 +78,13 @@ if tipo_analise == "Comparação por percentual (%)":
         elif not coluna_chave or not coluna_analise:
             st.sidebar.error("Por favor, preencha os nomes de ambas as colunas na barra lateral.")
         else:
-            with st.spinner("Localizando inscrições e cruzando dados fiscais... Aguarde."):
-                df_base = pd.read_csv(arquivo_base, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
-                df_comp = pd.read_csv(arquivo_comparar, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+            with st.spinner("Localizando inscrições e cruzando dados fiscais... Aguarde."):   
+                # Carrega os arquivos convertendo os bytes em texto antes do Pandas processar
+                conteudo_base = io.StringIO(arquivo_base.getvalue().decode('utf-8-sig', errors='ignore'))
+                conteudo_comp = io.StringIO(arquivo_comparar.getvalue().decode('utf-8-sig', errors='ignore'))
+
+                df_base = pd.read_csv(conteudo_base, sep=None, engine='python', dtype=str, on_bad_lines='skip')
+                df_comp = pd.read_csv(conteudo_comp, sep=None, engine='python', dtype=str, on_bad_lines='skip')
 
                 df_base.columns = df_base.columns.str.strip()
                 df_comp.columns = df_comp.columns.str.strip()
