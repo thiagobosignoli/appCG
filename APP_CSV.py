@@ -370,7 +370,8 @@ else:
     if st.session_state.df_resultado_beneficios is not None:
         df_resultado_beneficios = st.session_state.df_resultado_beneficios
         m = st.session_state.metricas_beneficios
-        st.success(f"Expurgo Concluído! Analisados {m['original']} registros da tabela corrente. Foram localizados e excluídos {m['excluido']} registros constantes no arquivo de benefícios.")
+        #st.success(f"Expurgo Concluído! Analisados {m['original']} registros da tabela corrente. Foram localizados e excluídos {m['excluido']} registros constantes no arquivo de benefícios.")
+        st.success(f"Expurgo Concluído! Analisados {m['original']} registros da tabela corrente. Foram localizados e excluídos {m['excluido']} registros constantes no arquivo de benefícios, restando {m['permanece']} registros válidos.")
         st.subheader("Tabela do Ano Corrente Filtrada (Sem Beneficiários)")
         st.dataframe(df_resultado_beneficios.head(100))
 
