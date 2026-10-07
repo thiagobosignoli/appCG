@@ -177,7 +177,7 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.download_button(label="📥 Baixar Relatório Consistente (.csv)", data=csv_original, file_name="relatorio_registros_consistentes.csv", mime="text/csv", key="btn_download_1")
                 
             with btn_col2:
-                st.subheader("2. Linhas Brutas do Ano X (Validadas)")
+                st.subheader("2. Linhas Brutas do Ano Recente (Validadas)")
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
                 st.download_button(label="📥 Baixar Linhas Validadas do Ano Recente (.csv)", data=csv_arquivo2, file_name="linhas_validadas_ano_Recente.csv", mime="text/csv", key="btn_download_2")
