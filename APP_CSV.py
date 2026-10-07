@@ -1,7 +1,7 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
-import io
 
 # Configuração da página web
 st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
@@ -57,7 +57,7 @@ if tipo_analise == "Comparação por percentual (%)":
 
     incluir_novas = st.sidebar.checkbox(
         "Incluir novas inscrições (Inexistentes no Ano Anterior)", 
-        value=True,
+        value=False,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
 
@@ -81,11 +81,8 @@ if tipo_analise == "Comparação por percentual (%)":
             st.sidebar.error("Por favor, preencha os nomes de ambas as colunas na barra lateral.")
         else:
             with st.spinner("Localizando inscrições e cruzando dados fiscais... Aguarde."):
-                conteudo_base = io.StringIO(arquivo_base.getvalue().decode('utf-8-sig', errors='ignore'))
-                conteudo_comp = io.StringIO(arquivo_comparar.getvalue().decode('utf-8-sig', errors='ignore'))
-                
-                df_base = pd.read_csv(conteudo_base, sep=None, engine='python', dtype=str, on_bad_lines='skip')
-                df_comp = pd.read_csv(conteudo_comp, sep=None, engine='python', dtype=str, on_bad_lines='skip')
+                df_base = pd.read_csv(arquivo_base, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+                df_comp = pd.read_csv(arquivo_comparar, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
 
                 df_base.columns = df_base.columns.str.strip()
                 df_comp.columns = df_comp.columns.str.strip()
@@ -207,8 +204,7 @@ elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
             st.sidebar.error("Por favor, certifique-se de que carregou o arquivo e preencheu todos os campos.")
         else:
             with st.spinner("Analisando registros... Aguarde."):
-                conteudo_filtro = io.StringIO(arquivo_filtro.getvalue().decode('utf-8-sig', errors='ignore'))
-                df_filtro = pd.read_csv(conteudo_filtro, sep=None, engine='python', dtype=str, on_bad_lines='skip')
+                df_filtro = pd.read_csv(arquivo_filtro, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
                 df_filtro.columns = df_filtro.columns.str.strip()
 
                 if coluna_filtro not in df_filtro.columns:
@@ -252,8 +248,7 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
             st.sidebar.error("Por favor, preencha a coluna de valor e carregue o arquivo.")
         else:
             with st.spinner("Analisando limites financeiros... Aguarde."):
-                conteudo_teto = io.StringIO(arquivo_teto.getvalue().decode('utf-8-sig', errors='ignore'))
-                df_teto = pd.read_csv(conteudo_teto, sep=None, engine='python', dtype=str, on_bad_lines='skip')
+                df_teto = pd.read_csv(arquivo_teto, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
                 df_teto.columns = df_teto.columns.str.strip()
 
                 if coluna_valor_teto not in df_teto.columns:
@@ -295,8 +290,7 @@ elif tipo_analise == "Excluir por Data de atualização (ano)":
             st.sidebar.error("Por favor, preencha todos os campos e carregue o arquivo.")
         else:
             with st.spinner("Filtrando datas temporais... Aguarde."):
-                conteudo_data = io.StringIO(arquivo_data.getvalue().decode('utf-8-sig', errors='ignore'))
-                df_data = pd.read_csv(conteudo_data, sep=None, engine='python', dtype=str, on_bad_lines='skip')
+                df_data = pd.read_csv(arquivo_data, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
                 df_data.columns = df_data.columns.str.strip()
 
                 if coluna_data not in df_data.columns:
@@ -323,66 +317,63 @@ elif tipo_analise == "Excluir por Data de atualização (ano)":
 # MODO 5 - EXCLUIR POR ARQUIVO DE BENEFÍCIOS
 # ============================================================
 else:
-    st.sidebar.subheader("Parâmetros de Exclusão de Benefícios")
-    coluna_chave_beneficio = st.sidebar.text_input("Nome da coluna de Inscrição / Chave (Modo Benefício)", value="NUM_INSCRICAO", key="chave_beneficio").strip()
+    st.sidebar.subheader("Parâmetros de Benefícios")
+    coluna_chave_beneficio = st.sidebar.text_input("Nome da coluna de Inscrição / Chave", value="NUM_INSCRICAO", key="chave_beneficios").strip()
 
     col1, col2 = st.columns(2)
     with col1:
-        arquivo_recente_b = st.file_uploader("Upload da Tabela Recente (Ano X) (CSV)", type=["csv"], key="upload_base_modo5")
+        arquivo_recente = st.file_uploader("Upload da Tabela do Ano Corrente (CSV)", type=["csv"], key="upload_recente_modo5")
     with col2:
-        arquivo_beneficios_b = st.file_uploader("Upload da Tabela de Benefícios (A Excluir) (CSV)", type=["csv"], key="upload_comp_modo5")
+        arquivo_beneficios = st.file_uploader("Upload da Tabela de Benefícios (CSV)", type=["csv"], key="upload_beneficios_modo5")
 
-    if arquivo_recente_b:
-        verificar_e_limpar_estado("file_modo5_recente", arquivo_recente_b.name)
+    if arquivo_recente:
+        verificar_e_limpar_estado("file_modo5", arquivo_recente.name)
 
-    botao_beneficios = st.sidebar.button("⚡ Executar Filtro de Benefícios")
+    botao_beneficios = st.sidebar.button("⚡ Executar Expurgo de Benefícios")
 
     if botao_beneficios:
-        if not arquivo_recente_b or not arquivo_beneficios_b or not coluna_chave_beneficio:
-            st.sidebar.error("Por favor, carregue ambos os arquivos e indique a coluna da chave.")
+        if not arquivo_recente or not arquivo_beneficios:
+            st.sidebar.error("Por favor, faça o upload de ambos os arquivos CSV antes de executar.")
+        elif not coluna_chave_beneficio:
+            st.sidebar.error("Por favor, insira o nome da coluna de identificação na barra lateral.")
         else:
-            with st.spinner("Mapeando histórico e removendo inscrições de benefícios... Aguarde."):
-                conteudo_rec = io.StringIO(arquivo_recente_b.getvalue().decode('utf-8-sig', errors='ignore'))
-                conteudo_ben = io.StringIO(arquivo_beneficios_b.getvalue().decode('utf-8-sig', errors='ignore'))
-                
-                df_recente = pd.read_csv(conteudo_rec, sep=None, engine='python', dtype=str, on_bad_lines='skip')
-                df_beneficios = pd.read_csv(conteudo_ben, sep=None, engine='python', dtype=str, on_bad_lines='skip')
+            with st.spinner("Cruzando inscrições com a base de benefícios... Aguarde."):
+                df_rec = pd.read_csv(arquivo_recente, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+                df_ben = pd.read_csv(arquivo_beneficios, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
 
-                df_recente.columns = df_recente.columns.str.strip()
-                df_beneficios.columns = df_beneficios.columns.str.strip()
+                df_rec.columns = df_rec.columns.str.strip()
+                df_ben.columns = df_ben.columns.str.strip()
 
-                if coluna_chave_beneficio not in df_recente.columns or coluna_chave_beneficio not in df_beneficios.columns:
-                    st.error(f"Erro Crítico: A coluna chave '{coluna_chave_beneficio}' não existe em um dos arquivos.")
+                if coluna_chave_beneficio not in df_rec.columns or coluna_chave_beneficio not in df_ben.columns:
+                    st.error(f"Erro Crítico: A coluna de inscrição '{coluna_chave_beneficio}' não foi encontrada em um dos arquivos.")
                 else:
-                    def normalizar_chave(serie):
+                    def normalizar_sublote(serie):
                         return (serie.astype(str).str.strip().str.replace(r'[\.\-\/]', '', regex=True).str.lstrip('0'))
 
-                    df_recente['CHAVE_ALINHA'] = normalizar_chave(df_recente[coluna_chave_beneficio])
-                    df_beneficios['CHAVE_ALINHA'] = normalizar_chave(df_beneficios[coluna_chave_beneficio])
+                    df_rec['CHAVE_ALINHA'] = normalizar_sublote(df_rec[coluna_chave_beneficio])
+                    df_ben['CHAVE_ALINHA'] = normalizar_sublote(df_ben[coluna_chave_beneficio])
 
-                    # Cria um conjunto de chaves de benefícios para busca em tempo O(1)
-                    chaves_beneficios_set = set(df_beneficios['CHAVE_ALINHA'].dropna().unique())
+                    chaves_beneficios = set(df_ben['CHAVE_ALINHA'].dropna().unique())
+                    registros_excluir = df_rec['CHAVE_ALINHA'].isin(chaves_beneficios)
+                    
+                    df_resultado_beneficios_gerado = df_rec[~registros_excluir].copy()
 
-                    # Filtra: mantém apenas quem NÃO está no conjunto de benefícios
-                    esta_no_beneficio = df_recente['CHAVE_ALINHA'].isin(chaves_beneficios_set)
-                    df_resultado_ben_gerado = df_recente[~esta_no_beneficio].copy()
+                    if 'CHAVE_ALINHA' in df_resultado_beneficios_gerado.columns:
+                        df_resultado_beneficios_gerado = df_resultado_beneficios_gerado.drop(columns=['CHAVE_ALINHA'])
 
-                    if 'CHAVE_ALINHA' in df_resultado_ben_gerado.columns:
-                        df_resultado_ben_gerado = df_resultado_ben_gerado.drop(columns=['CHAVE_ALINHA'])
-
-                    st.session_state.df_resultado_beneficios = df_resultado_ben_gerado
+                    st.session_state.df_resultado_beneficios = df_resultado_beneficios_gerado
                     st.session_state.metricas_beneficios = {
-                        "original": len(df_recente),
-                        "excluido": esta_no_beneficio.sum(),
-                        "permanece": len(df_resultado_ben_gerado)
+                        "original": len(df_rec),
+                        "excluido": registros_excluir.sum(),
+                        "permanece": len(df_resultado_beneficios_gerado)
                     }
 
     if st.session_state.df_resultado_beneficios is not None:
         df_resultado_beneficios = st.session_state.df_resultado_beneficios
         m = st.session_state.metricas_beneficios
-        st.success(f"Expurgo concluído! Varremos {m['original']} linhas da tabela recente, localizamos e removemos {m['excluido']} registros constantes no arquivo de benefícios, mantendo {m['permanece']} registros.")
-        st.subheader("Registros Limpos (Sem Inscrições de Benefícios)")
+        st.success(f"Expurgo Concluído! Analisados {m['original']} registros da tabela corrente. Foram localizados e excluídos {m['excluido']} registros constantes no arquivo de benefícios.")
+        st.subheader("Tabela do Ano Corrente Filtrada (Sem Beneficiários)")
         st.dataframe(df_resultado_beneficios.head(100))
 
-        csv_filtro = df_resultado_beneficios.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Planilha Sem Benefícios (.csv)", data=csv_filtro, file_name="linhas_sem_beneficios_ano_Recente.csv", mime="text/csv", key="btn_download_beneficios")
+        csv_beneficios = df_resultado_beneficios.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+        st.download_button(label="📥 Baixar Tabela Filtrada (.csv)", data=csv_beneficios, file_name="tabela_sem_beneficios.csv", mime="text/csv", key="btn_download_beneficios")
