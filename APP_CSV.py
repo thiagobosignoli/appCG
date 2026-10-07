@@ -16,11 +16,11 @@ st.sidebar.header("Parâmetros da Análise")
 tipo_analise = st.sidebar.radio(
     "Tipo de análise:",
     [
-        "1 - Comparação por percentual (%)",
-        "2 - Filtro por Parâmetro (Sim/Não)",
-        "3 - Excluir por Valor Até (Teto)",
-        "4 - Excluir por Data de atualização (ano)",
-        "5 - Excluir por Arquivo de Benefícios"
+        "Comparação por percentual (%)",
+        "Filtro por Parâmetro (Sim/Não)",
+        "Excluir por Valor Até (Teto)",
+        "Excluir por Data de atualização (ano)",
+        "Excluir por Arquivo de Benefícios"
     ],
     key="tipo_analise_global"
 )
