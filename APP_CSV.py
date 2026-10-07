@@ -18,7 +18,7 @@ tipo_analise = st.sidebar.radio(
         "Comparação por percentual (%)",
         "Filtro por Parâmetro (Sim/Não)",
         "Excluir por Valor Até (Teto)",
-        "Excluir por Ano (Data)"
+        "Excluir por Data de atualização (ano)"
     ],
     key="tipo_analise_global"
 )
@@ -54,7 +54,7 @@ if tipo_analise == "Comparação por percentual (%)":
         limite_superior = st.number_input("Limite Superior (Y%)", min_value=0.0, max_value=100.0, value=4.6, step=0.1)
 
     incluir_novas = st.sidebar.checkbox(
-        "Include novas inscrições (Inexistentes no Ano Anterior)", 
+        "Incluir novas inscrições (Inexistentes no Ano Anterior)", 
         value=True,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
@@ -96,17 +96,17 @@ if tipo_analise == "Comparação por percentual (%)":
                     df_base['CHAVE_ALINHA'] = normalizar_sublote(df_base[coluna_chave])
                     df_comp['CHAVE_ALINHA'] = normalizar_sublote(df_comp[coluna_chave])
 
-                    df_base['Valor_Ano_X'] = pd.to_numeric(df_base[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
-                    df_comp['Valor_Ano_X_Menos_1'] = pd.to_numeric(df_comp[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
+                    df_base['Valor_Ano'] = pd.to_numeric(df_base[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
+                    df_comp['Valor_Ano_Menos_1'] = pd.to_numeric(df_comp[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
 
                     df_comp_limpo = df_comp.drop_duplicates(subset=['CHAVE_ALINHA'])
-                    dict_valores_comp = dict(zip(df_comp_limpo['CHAVE_ALINHA'], df_comp_limpo['Valor_Ano_X_Menos_1']))
+                    dict_valores_comp = dict(zip(df_comp_limpo['CHAVE_ALINHA'], df_comp_limpo['Valor_Ano_Menos_1']))
 
                     df_base['Valor_Comparar_Antigo'] = df_base['CHAVE_ALINHA'].map(dict_valores_comp)
                     df_base['Localizado_No_Comp'] = df_base['CHAVE_ALINHA'].isin(dict_valores_comp.keys())
                     df_base['Valor_Comparar_Calc_Antigo'] = df_base['Valor_Comparar_Antigo'].fillna(0.0)
 
-                    v_recente = df_base['Valor_Ano_X'].values
+                    v_recente = df_base['Valor_Ano'].values
                     v_antigo = df_base['Valor_Comparar_Calc_Antigo'].values
 
                     ambos_zeros = (v_recente == 0) & (v_antigo == 0)
@@ -129,7 +129,7 @@ if tipo_analise == "Comparação por percentual (%)":
                     df_resultado = df_base[condicao_manter].copy()
 
                     df_resultado['Ocorrencia'] = np.where(
-                        ~df_resultado['Localizado_No_Comp'], "Inscrição Nova (Sem histórico no Ano X-1)",
+                        ~df_resultado['Localizado_No_Comp'], "Inscrição Nova (Sem histórico no Ano Aterior)",
                         np.where(df_resultado['Variacao_%'] == 0, "Valores Idênticos",
                         np.where(df_resultado['Variacao_%'] > 0, "Aumento Aceito (Fora da Faixa)", "Redução Aceita (Fora da Faixa)"))
                     )
@@ -137,13 +137,13 @@ if tipo_analise == "Comparação por percentual (%)":
                     relatorio_original_gerado = pd.DataFrame({
                         'Inscricao_Sublote': df_resultado[coluna_chave],
                         'Tipo_Inconsistencia': df_resultado['Ocorrencia'],
-                        'Valor_Ano_Recente': df_resultado['Valor_Ano_X'],
+                        'Valor_Ano_Recente': df_resultado['Valor_Ano'],
                         'Valor_Ano_Antigo': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Valor_Comparar_Antigo'], "Inexistente"),
                         'Diferenca_Percentual': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Variacao_%'].astype(str) + "%", "N/A")
                     })
 
                     relatorio_arquivo2_divergente_gerado = df_resultado.drop(
-                        columns=['CHAVE_ALINHA', 'Valor_Ano_X', 'Valor_Comparar_Antigo', 'Localizado_No_Comp', 'Valor_Comparar_Calc_Antigo', 'Variacao_%', 'Ocorrencia'], 
+                        columns=['CHAVE_ALINHA', 'Valor_Ano', 'Valor_Comparar_Antigo', 'Localizado_No_Comp', 'Valor_Comparar_Calc_Antigo', 'Variacao_%', 'Ocorrencia'], 
                         errors='ignore'
                     )
 
@@ -157,7 +157,7 @@ if tipo_analise == "Comparação por percentual (%)":
         total_base = st.session_state.total_base
 
         if not relatorio_original.empty:
-            st.success(f"Análise Concluída! Varremos {total_base} lines e mantivemos {len(relatorio_original)} registros (excluindo os contidos na faixa de {limite_inferior}% a {limite_superior}%).")
+            st.success(f"Análise Concluída! Varremos {total_base} linhas e mantivemos {len(relatorio_original)} registros (excluindo os contidos na faixa de {limite_inferior}% a {limite_superior}%).")
             btn_col1, btn_col2 = st.columns(2)
 
             with btn_col1:
@@ -179,7 +179,7 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.subheader("2. Linhas Brutas do Ano X (Validadas)")
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-                st.download_button(label="📥 Baixar Linhas Validadas do Ano Recente (.csv)", data=csv_arquivo2, file_name="linhas_validadas_ano_x.csv", mime="text/csv", key="btn_download_2")
+                st.download_button(label="📥 Baixar Linhas Validadas do Ano Recente (.csv)", data=csv_arquivo2, file_name="linhas_validadas_ano_Recente.csv", mime="text/csv", key="btn_download_2")
         else:
             st.warning("Atenção: Nenhum registro atendeu aos critérios de consistência estipulados.")
 
@@ -188,8 +188,8 @@ if tipo_analise == "Comparação por percentual (%)":
 # ============================================================
 elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
     st.sidebar.subheader("Parâmetros do Filtro")
-    coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="COLUNA").strip()
-    parametro_exclusao = st.sidebar.text_input("Parâmetro a excluir", value="sim").strip()
+    coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="FLG_HOUVE_DEPRECIACAO").strip()
+    parametro_exclusao = st.sidebar.text_input("Parâmetro a excluir", value="S").strip()
 
     arquivo_filtro = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo2")
     if arquivo_filtro:
@@ -232,7 +232,7 @@ elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
 # ============================================================
 elif tipo_analise == "Excluir por Valor Até (Teto)":
     st.sidebar.subheader("Parâmetros do Teto")
-    coluna_valor_teto = st.sidebar.text_input("Nome da coluna de valor", value="VLR_IMPOSTO").strip()
+    coluna_valor_teto = st.sidebar.text_input("Nome da coluna de valor", value="VLR_VENAL_IMOVEL_TRIB").strip()
     teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0)
 
     arquivo_teto = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo3")
@@ -304,7 +304,7 @@ else:
     if st.session_state.df_resultado_ano is not None:
         df_resultado_ano = st.session_state.df_resultado_ano
         m = st.session_state.metricas_ano
-        st.success(f"Filtro temporal concluído! Analisados {m['original']} registros, excluídos {m['excluido']} registros pertencentes ao ano de {ano_excluir}.")
+        st.success(f"Filtro de data concluído! Analisados {m['original']} registros, excluídos {m['excluido']} registros pertencentes ao ano de {ano_excluir}.")
         st.subheader("Registros mantidos (Anos restantes)")
         st.dataframe(df_resultado_ano.head(100))
 
