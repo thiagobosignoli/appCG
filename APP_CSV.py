@@ -288,7 +288,7 @@ elif tipo_analise == "Excluir por Data de atualização (ano)":
         if not arquivo_data or not coluna_data or not ano_excluir:
             st.sidebar.error("Por favor, preencha todos os campos e carregue o arquivo.")
         else:
-            with st.spinner("Filtrando datas temporais... Aguarde."):
+            with st.spinner("Filtrando datas por Ano... Aguarde."):
                 df_data = pd.read_csv(arquivo_data, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
                 df_data.columns = df_data.columns.str.strip()
 
