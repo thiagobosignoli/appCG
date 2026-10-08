@@ -174,7 +174,12 @@ if tipo_analise == "Comparação por percentual (%)":
         total_base = st.session_state.total_base
 
         if not relatorio_original.empty:
-            st.success(f"Análise Concluída! Varremos {total_base} linhas e mantivemos {len(relatorio_original)} registros (excluindo os contidos na faixa de {limite_inferior}% a {limite_superior}%).")
+           # Calcula a quantidade exata de registros excluídos na faixa
+            linhas_excluidas = total_base - len(relatorio_original)    
+            st.success(
+                f"Análise Concluída! Varremos {total_base} linhas, "f"excluímos {linhas_excluidas} registros contidos na faixa de {limite_inferior}% a {limite_superior}% "
+                f"e mantivemos {len(relatorio_original)} registros consistentes."
+            )
             btn_col1, btn_col2 = st.columns(2)
 
             with btn_col1:
