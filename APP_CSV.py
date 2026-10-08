@@ -72,7 +72,7 @@ if tipo_analise == "Comparação por percentual (%)":
 
     incluir_novas = st.sidebar.checkbox(
         "Incluir novas inscrições (Inexistentes no Ano Anterior)", 
-        value=True,
+        value=False,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
 
@@ -196,7 +196,7 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.subheader("2. Linhas Brutas do Ano X (Validadas)")
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-                st.download_button(label="📥 Baixar Linhas Validadas do Ano Recente (.csv)", data=csv_arquivo2, file_name="linhas_validadas_ano_Recente.csv", mime="text/csv", key="btn_download_2")
+                st.download_button(label="📥 Baixar Linhas Validadas do Ano Recente (.csv)", data=csv_arquivo2, file_name="1_linhas_validadas_ano_Recente.csv", mime="text/csv", key="btn_download_2")
         else:
             st.warning("Atenção: Nenhum registro atendeu aos critérios de consistência estipulados.")
 
@@ -242,7 +242,7 @@ elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
         st.dataframe(df_resultado_filtro.head(100))
 
         csv_filtro = df_resultado_filtro.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Resultado Filtrado (.csv)", data=csv_filtro, file_name="resultado_filtro_parametro.csv", mime="text/csv", key="btn_download_filtro")
+        st.download_button(label="📥 Baixar Resultado Filtrado (.csv)", data=csv_filtro, file_name="2_resultado_filtro_parametro.csv", mime="text/csv", key="btn_download_filtro")
 
 # ============================================================
 # MODO 3 - EXCLUIR POR VALOR ATÉ (TETO NUMÉRICO)
@@ -284,7 +284,7 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
         st.dataframe(df_resultado_valor.head(100))
 
         csv_filtro = df_resultado_valor.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Tabela Filtrada por Valor (.csv)", data=csv_filtro, file_name="resultado_filtro_teto.csv", mime="text/csv", key="btn_download_teto")
+        st.download_button(label="📥 Baixar Tabela Filtrada por Valor (.csv)", data=csv_filtro, file_name="3_resultado_filtro_teto.csv", mime="text/csv", key="btn_download_teto")
 
 # ============================================================
 # MODO 4 - EXCLUIR POR ANO (DATA dd/mm/aaaa)
@@ -326,7 +326,7 @@ elif tipo_analise == "Excluir por Data de atualização (ano)":
         st.dataframe(df_resultado_ano.head(100))
 
         csv_filtro = df_resultado_ano.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Tabela Filtrada por Ano (.csv)", data=csv_filtro, file_name="resultado_filtro_ano.csv", mime="text/csv", key="btn_download_ano")
+        st.download_button(label="📥 Baixar Tabela Filtrada por Ano (.csv)", data=csv_filtro, file_name="4_resultado_filtro_ano.csv", mime="text/csv", key="btn_download_ano")
 
 # ============================================================
 # MODO 5 - EXCLUIR POR ARQUIVO DE BENEFÍCIOS
@@ -391,4 +391,4 @@ else:
         st.dataframe(df_resultado_beneficios.head(100))
 
         csv_beneficios = df_resultado_beneficios.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Tabela Corrente Filtrada (.csv)", data=csv_beneficios, file_name="tabela_corrente_sem_beneficios.csv", mime="text/csv", key="btn_download_beneficios")
+        st.download_button(label="📥 Baixar Tabela Corrente Filtrada (.csv)", data=csv_beneficios, file_name="5_tabela_corrente_sem_beneficios.csv", mime="text/csv", key="btn_download_beneficios")
