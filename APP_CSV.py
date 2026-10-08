@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import io
 
 # Configuração da página web
 st.set_page_config(page_title="Comparador de Tabelas Analítico", layout="wide")
@@ -41,7 +42,22 @@ verificar_e_limpar_estado("tipo_analise", tipo_analise)
 for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios"]:
     if k not in st.session_state:
         st.session_state[k] = None
-        
+
+# --- FUNÇÃO DE LEITURA BLINDADA CONTRA ERROS DE UNICODE/ENCODING ---
+def ler_csv_seguro(arquivo_uploader):
+    bytes_data = arquivo_uploader.getvalue()
+    try:
+        # Tenta o padrão UTF-8 com sinalização de BOM
+        return pd.read_csv(io.BytesIO(bytes_data), sep=None, engine='python', encoding='utf-8-sig', dtype=str, on_bad_lines='skip')
+    except Exception:
+        try:
+            # Tenta o padrão Windows latino comum em sistemas legados / Excel
+            return pd.read_csv(io.BytesIO(bytes_data), sep=None, engine='python', encoding='latin1', dtype=str, on_bad_lines='skip')
+        except Exception:
+            # Caso extremo, lê ignorando os caracteres corrompidos
+            texto = bytes_data.decode('utf-8', errors='ignore')
+            return pd.read_csv(io.StringIO(texto), sep=None, engine='python', dtype=str, on_bad_lines='skip')
+
 # ============================================================
 # MODO 1 - COMPARAÇÃO POR PERCENTUAL (Com Faixa de Exclusão)
 # ============================================================
@@ -56,7 +72,7 @@ if tipo_analise == "Comparação por percentual (%)":
 
     incluir_novas = st.sidebar.checkbox(
         "Incluir novas inscrições (Inexistentes no Ano Anterior)", 
-        value=False,
+        value=True,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
 
@@ -80,8 +96,8 @@ if tipo_analise == "Comparação por percentual (%)":
             st.sidebar.error("Por favor, preencha os nomes de ambas as colunas na barra lateral.")
         else:
             with st.spinner("Localizando inscrições e cruzando dados fiscais... Aguarde."):
-                df_base = pd.read_csv(arquivo_base, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
-                df_comp = pd.read_csv(arquivo_comparar, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+                df_base = ler_csv_seguro(arquivo_base)
+                df_comp = ler_csv_seguro(arquivo_comparar)
 
                 df_base.columns = df_base.columns.str.strip()
                 df_comp.columns = df_comp.columns.str.strip()
@@ -177,10 +193,10 @@ if tipo_analise == "Comparação por percentual (%)":
                 st.download_button(label="📥 Baixar Relatório Consistente (.csv)", data=csv_original, file_name="relatorio_registros_consistentes.csv", mime="text/csv", key="btn_download_1")
                 
             with btn_col2:
-                st.subheader("2. Linhas Brutas do Ano Recente (Validadas)")
+                st.subheader("2. Linhas Brutas do Ano X (Validadas)")
                 st.dataframe(relatorio_arquivo2_divergente.head(100))
                 csv_arquivo2 = relatorio_arquivo2_divergente.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-                st.download_button(label="📥 Baixar Linhas Validadas do Ano Recente (.csv)", data=csv_arquivo2, file_name="1_linhas_validadas_ano_Recente.csv", mime="text/csv", key="btn_download_2")
+                st.download_button(label="📥 Baixar Linhas Validadas do Ano Recente (.csv)", data=csv_arquivo2, file_name="linhas_validadas_ano_Recente.csv", mime="text/csv", key="btn_download_2")
         else:
             st.warning("Atenção: Nenhum registro atendeu aos critérios de consistência estipulados.")
 
@@ -203,7 +219,7 @@ elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
             st.sidebar.error("Por favor, certifique-se de que carregou o arquivo e preencheu todos os campos.")
         else:
             with st.spinner("Analisando registros... Aguarde."):
-                df_filtro = pd.read_csv(arquivo_filtro, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+                df_filtro = ler_csv_seguro(arquivo_filtro)
                 df_filtro.columns = df_filtro.columns.str.strip()
 
                 if coluna_filtro not in df_filtro.columns:
@@ -221,12 +237,12 @@ elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
     if st.session_state.df_resultado_filtro is not None:
         df_resultado_filtro = st.session_state.df_resultado_filtro
         m = st.session_state.metricas_filtro
-        st.success(f"Análise concluída! Foram analisados {m['original']} registros, {m['excluido']} registros com o parâmetro '{parametro_exclusao}' foram excluídos.")
+        st.success(f"Análise concluída! Foram analisados {m['original']} registros, {m['excluido']} registros com o parâmetro '{parametro_exclusao}' foram excluídos, restando {m['permanece']} registros.")
         st.subheader("Registros mantidos")
         st.dataframe(df_resultado_filtro.head(100))
 
         csv_filtro = df_resultado_filtro.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Resultado Filtrado (.csv)", data=csv_filtro, file_name="2_resultado_filtro_parametro.csv", mime="text/csv", key="btn_download_filtro")
+        st.download_button(label="📥 Baixar Resultado Filtrado (.csv)", data=csv_filtro, file_name="resultado_filtro_parametro.csv", mime="text/csv", key="btn_download_filtro")
 
 # ============================================================
 # MODO 3 - EXCLUIR POR VALOR ATÉ (TETO NUMÉRICO)
@@ -247,7 +263,7 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
             st.sidebar.error("Por favor, preencha a coluna de valor e carregue o arquivo.")
         else:
             with st.spinner("Analisando limites financeiros... Aguarde."):
-                df_teto = pd.read_csv(arquivo_teto, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+                df_teto = ler_csv_seguro(arquivo_teto)
                 df_teto.columns = df_teto.columns.str.strip()
 
                 if coluna_valor_teto not in df_teto.columns:
@@ -263,12 +279,12 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
     if st.session_state.df_resultado_valor is not None:
         df_resultado_valor = st.session_state.df_resultado_valor
         m = st.session_state.metricas_valor
-        st.success(f"Filtro aplicado! Analisados {m['original']} registros, excluídos {m['excluido']} registros com valor até R$ {teto_num:,.2f}.")
+        st.success(f"Filtro aplicado! Analisados {m['original']} registros, excluídos {m['excluido']} registros com valor até R$ {teto_num:,.2f}, restando {m['permanece']} registros.")
         st.subheader("Registros com valores acima do teto mantidos")
         st.dataframe(df_resultado_valor.head(100))
 
         csv_filtro = df_resultado_valor.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Tabela Filtrada por Valor (.csv)", data=csv_filtro, file_name="3_resultado_filtro_teto.csv", mime="text/csv", key="btn_download_teto")
+        st.download_button(label="📥 Baixar Tabela Filtrada por Valor (.csv)", data=csv_filtro, file_name="resultado_filtro_teto.csv", mime="text/csv", key="btn_download_teto")
 
 # ============================================================
 # MODO 4 - EXCLUIR POR ANO (DATA dd/mm/aaaa)
@@ -288,8 +304,8 @@ elif tipo_analise == "Excluir por Data de atualização (ano)":
         if not arquivo_data or not coluna_data or not ano_excluir:
             st.sidebar.error("Por favor, preencha todos os campos e carregue o arquivo.")
         else:
-            with st.spinner("Filtrando datas por Ano... Aguarde."):
-                df_data = pd.read_csv(arquivo_data, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+            with st.spinner("Filtrando datas temporais... Aguarde."):
+                df_data = ler_csv_seguro(arquivo_data)
                 df_data.columns = df_data.columns.str.strip()
 
                 if coluna_data not in df_data.columns:
@@ -305,12 +321,12 @@ elif tipo_analise == "Excluir por Data de atualização (ano)":
     if st.session_state.df_resultado_ano is not None:
         df_resultado_ano = st.session_state.df_resultado_ano
         m = st.session_state.metricas_ano
-        st.success(f"Filtro de data concluído! Analisados {m['original']} registros, excluídos {m['excluido']} registros pertencentes ao ano de {ano_excluir}.")
+        st.success(f"Filtro de data concluído! Analisados {m['original']} registros, excluídos {m['excluido']} registros pertencentes ao ano de {ano_excluir}, restando {m['permanece']} registros.")
         st.subheader("Registros mantidos (Anos restantes)")
         st.dataframe(df_resultado_ano.head(100))
 
         csv_filtro = df_resultado_ano.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Tabela Filtrada por Ano (.csv)", data=csv_filtro, file_name="4_resultado_filtro_ano.csv", mime="text/csv", key="btn_download_ano")
+        st.download_button(label="📥 Baixar Tabela Filtrada por Ano (.csv)", data=csv_filtro, file_name="resultado_filtro_ano.csv", mime="text/csv", key="btn_download_ano")
 
 # ============================================================
 # MODO 5 - EXCLUIR POR ARQUIVO DE BENEFÍCIOS
@@ -337,8 +353,8 @@ else:
             st.sidebar.error("Por favor, insira o nome da coluna de identificação na barra lateral.")
         else:
             with st.spinner("Cruzando inscrições com a base de benefícios... Aguarde."):
-                df_rec = pd.read_csv(arquivo_recente, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
-                df_ben = pd.read_csv(arquivo_beneficios, sep=None, engine='python', encoding='utf-8-sig', on_bad_lines='skip', dtype=str)
+                df_rec = ler_csv_seguro(arquivo_recente)
+                df_ben = ler_csv_seguro(arquivo_beneficios)
 
                 df_rec.columns = df_rec.columns.str.strip()
                 df_ben.columns = df_ben.columns.str.strip()
@@ -370,10 +386,9 @@ else:
     if st.session_state.df_resultado_beneficios is not None:
         df_resultado_beneficios = st.session_state.df_resultado_beneficios
         m = st.session_state.metricas_beneficios
-        #st.success(f"Expurgo Concluído! Analisados {m['original']} registros da tabela corrente. Foram localizados e excluídos {m['excluido']} registros constantes no arquivo de benefícios.")
         st.success(f"Expurgo Concluído! Analisados {m['original']} registros da tabela corrente. Foram localizados e excluídos {m['excluido']} registros constantes no arquivo de benefícios, restando {m['permanece']} registros válidos.")
         st.subheader("Tabela do Ano Corrente Filtrada (Sem Beneficiários)")
         st.dataframe(df_resultado_beneficios.head(100))
 
         csv_beneficios = df_resultado_beneficios.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Tabela Filtrada (.csv)", data=csv_beneficios, file_name="5_tabela_sem_beneficios.csv", mime="text/csv", key="btn_download_beneficios")
+        st.download_button(label="📥 Baixar Tabela Corrente Filtrada (.csv)", data=csv_beneficios, file_name="tabela_corrente_sem_beneficios.csv", mime="text/csv", key="btn_download_beneficios")
