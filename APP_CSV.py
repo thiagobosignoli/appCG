@@ -21,7 +21,7 @@ tipo_analise = st.sidebar.radio(
         "3 - Excluir por Valor Até (Teto)",
         "4 - Excluir por Data de atualização (ano)",
         "5 - Excluir por Arquivo de Benefícios",
-        "6 - Comparação Livre entre Colunas"
+        "6 - Comparação Livre entre Colunas "
     ],
     key="tipo_analise_global"
 )
@@ -44,20 +44,38 @@ for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "
     if k not in st.session_state:
         st.session_state[k] = None
 
-# --- FUNÇÃO DE LEITURA BLINDADA CONTRA ERROS DE UNICODE/ENCODING ---
+# --- FUNÇÃO DE LEITURA BLINDADA CONTRA ERROS DE UNICODE/ENCODING E DELIMITADORES AUTOMÁTICOS ---
 def ler_csv_seguro(arquivo_uploader):
     bytes_data = arquivo_uploader.getvalue()
+    
+    # Detecção prévia de separador analisando a primeira linha em formato texto
+    separador_detectado = None
+    try:
+        amostra_texto = bytes_data[:2048].decode('utf-8', errors='ignore')
+        primeira_linha = amostra_texto.split('\n')[0]
+        if '|' in primeira_linha:
+            separador_detectado = '|'
+        elif ';' in primeira_linha:
+            separador_detectado = ';'
+        elif ',' in primeira_linha:
+            separador_detectado = ','
+    except Exception:
+        pass
+
+    # Se falhar a detecção manual por string, deixa o pandas inferir com sep=None
+    separador_final = separador_detectado if separador_detectado else None
+
     try:
         # Tenta o padrão UTF-8 com sinalização de BOM
-        return pd.read_csv(io.BytesIO(bytes_data), sep=None, engine='python', encoding='utf-8-sig', dtype=str, on_bad_lines='skip')
+        return pd.read_csv(io.BytesIO(bytes_data), sep=separador_final, engine='python', encoding='utf-8-sig', dtype=str, on_bad_lines='skip')
     except Exception:
         try:
             # Tenta o padrão Windows latino comum em sistemas legados / Excel
-            return pd.read_csv(io.BytesIO(bytes_data), sep=None, engine='python', encoding='latin1', dtype=str, on_bad_lines='skip')
+            return pd.read_csv(io.BytesIO(bytes_data), sep=separador_final, engine='python', encoding='latin1', dtype=str, on_bad_lines='skip')
         except Exception:
             # Caso extremo, lê ignorando os caracteres corrompidos
             texto = bytes_data.decode('utf-8', errors='ignore')
-            return pd.read_csv(io.StringIO(texto), sep=None, engine='python', dtype=str, on_bad_lines='skip')
+            return pd.read_csv(io.StringIO(texto), sep=separador_final, engine='python', dtype=str, on_bad_lines='skip')
 
 # Normalizador padrão de chaves cadastrais
 def normalizar_sublote(serie):
@@ -83,7 +101,7 @@ if tipo_analise == "1 - Comparação por percentual (%)":
 
     coluna_chave = st.sidebar.text_input("Nome da coluna de Inscrição / Chave", value="NUM_INSCRICAO").strip()
     
-    st.sidebar.subheader("Mapeamento de Alvos")
+    st.sidebar.subheader("Mapeamento de Colunas de Valor")
     coluna_analise_rec = st.sidebar.text_input("Coluna na Tabela Recente:", value="VLR_IMPOSTO", key="col_rec_m1").strip()
     coluna_analise_ant = st.sidebar.text_input("Coluna na Tabela Antiga:", value="VLR_IMPOSTO", key="col_ant_m1").strip()
 
@@ -113,9 +131,9 @@ if tipo_analise == "1 - Comparação por percentual (%)":
                 if coluna_chave not in df_base.columns or coluna_chave not in df_comp.columns:
                     st.error(f"Erro Crítico: A coluna de inscrição '{coluna_chave}' não foi encontrada em um dos arquivos.")
                 elif coluna_analise_rec not in df_base.columns:
-                    st.error(f"Erro Crítico: A coluna recente '{coluna_analise_rec}' não existe no arquivo Recente.")
+                    st.error(f"Erro Crítico: A coluna recente '{coluna_analise_rec}' não foi encontrada na tabela recente.")
                 elif coluna_analise_ant not in df_comp.columns:
-                    st.error(f"Erro Crítico: A coluna antiga '{coluna_analise_ant}' não existe no arquivo Antigo.")
+                    st.error(f"Erro Crítico: A coluna antiga '{coluna_analise_ant}' não foi encontrada na tabela de comparação.")
                 else:
                     df_base['CHAVE_ALINHA'] = normalizar_sublote(df_base[coluna_chave])
                     df_comp['CHAVE_ALINHA'] = normalizar_sublote(df_comp[coluna_chave])
@@ -402,7 +420,7 @@ elif tipo_analise == "5 - Excluir por Arquivo de Benefícios":
         st.download_button(label="📥 Baixar Tabela Corrente Filtrada (.csv)", data=csv_beneficios, file_name="5_tabela_corrente_sem_beneficios.csv", mime="text/csv", key="btn_download_beneficios")
 
 # ============================================================
-# MODO 6 - COMPARAÇÃO LIVRE ENTRE COLUNAS DINÂMICAS
+# MODO 6 - COMPARAÇÃO LIVRE ENTRE COLUNAS 
 # ============================================================
 else:
     st.sidebar.subheader("Parâmetros do Cruzamento")
@@ -468,24 +486,26 @@ else:
                     # Processamento condicional do motor aritmético baseado no selectbox com filtros restritivos
                     if operacao_selecionada == "Menor que (<)":
                         condicao_filtro = (v_rec < v_ant)
-                        df_resultado_match['Resultado_Analise'] = "Recente é Menor"
+                        resultado_valores = "Recente é Menor"
                     elif operacao_selecionada == "Maior que (>)":
                         condicao_filtro = (v_rec > v_ant)
-                        df_resultado_match['Resultado_Analise'] = "Recente é Maior"
+                        resultado_valores = "Recente é Maior"
                     elif operacao_selecionada == "Subtração (Recente - Antiga)":
                         condicao_filtro = np.ones_like(v_rec, dtype=bool)  # Mantém todas as linhas
-                        df_resultado_match['Resultado_Analise'] = np.round(v_rec - v_ant, 2)
+                        resultado_valores = np.round(v_rec - v_ant, 2)
                     elif operacao_selecionada == "Multiplicação (*)":
                         condicao_filtro = np.ones_like(v_rec, dtype=bool)
-                        df_resultado_match['Resultado_Analise'] = np.round(v_rec * v_ant, 2)
+                        resultado_valores = np.round(v_rec * v_ant, 2)
                     else:  # Relação Percentual (%)
                         condicao_filtro = np.ones_like(v_rec, dtype=bool)
                         div_segura = np.divide((v_rec - v_ant), v_ant, out=np.zeros_like(v_ant, dtype=float), where=(v_rec != 0) & (v_ant != 0)) * 100.0
-                        df_resultado_match['Resultado_Analise'] = np.where((v_ant == 0) & (v_rec != 0), "100.0%", np.where((v_ant == 0) & (v_rec == 0), "0.0%", np.round(div_segura, 2).astype(str) + "%"))
+                        calc_pct = np.where((v_ant == 0) & (v_rec != 0), 100.0, np.where((v_ant == 0) & (v_rec == 0), 0.0, np.round(div_segura, 2)))
+                        resultado_valores = calc_pct.astype(str) + "%"
 
+                    df_resultado_match['Resultado_Analise'] = resultado_valores
                     df_final_filtrado = df_resultado_match[condicao_filtro].copy()
 
-                    # Estruturação visual final do dataframe de saída (Relatório)
+                    # 1. Estruturação visual do Relatório de Operação
                     relatorio_exibicao = pd.DataFrame({
                         'Chave_Identificacao': df_final_filtrado[coluna_chave_livre],
                         f'Recente_{coluna_rec_escolhida}': df_final_filtrado['VALOR_ALVO_REC'],
@@ -493,9 +513,9 @@ else:
                         f'Resultado_Operacao': df_final_filtrado['Resultado_Analise']
                     })
 
-                    # Estruturação visual final da tabela de interesse bruta
+                    # 2. Estruturação visual da Tabela de Interesse com colunas completas brutas restantes
                     tabela_bruta_exibicao = df_final_filtrado.drop(
-                        columns=['CHAVE_ALINHA', 'VALOR_ALVO_REC', 'VALOR_ALVO_ANT', 'Localizado_No_Antigo', 'VALOR_ANTIGO_MAPEADO', 'Resultado_Analise'], 
+                        columns=['CHAVE_ALINHA', 'VALOR_ALVO_REC', 'VALOR_ALVO_ANT', 'Localizado_No_Antigo', 'VALOR_ANTIGO_MAPEADO', 'Resultado_Analise'],
                         errors='ignore'
                     )
 
@@ -521,13 +541,13 @@ else:
         btn_col1, btn_col2 = st.columns(2)
         
         with btn_col1:
-            st.subheader("1. Relatório Analítico de Cruzamento")
+            st.subheader("1. Relatório Analítico de Operação")
             st.dataframe(df_resultado_livre.head(100))
             csv_livre = df_resultado_livre.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-            st.download_button(label="📥 Baixar Relatório de Cruzamento (.csv)", data=csv_livre, file_name="6_relatorio_analise_livre.csv", mime="text/csv", key="btn_download_livre_1")
+            st.download_button(label="📥 Baixar Relatório Customizado (.csv)", data=csv_livre, file_name="6_relatorio_operacao_customizada.csv", mime="text/csv", key="btn_download_livre_rep")
             
         with btn_col2:
             st.subheader("2. Tabela de Interesse (Dados Brutos Completos)")
             st.dataframe(df_resultado_livre_bruto.head(100))
             csv_livre_bruto = df_resultado_livre_bruto.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-            st.download_button(label="📥 Baixar Tabela de Interesse Completa (.csv)", data=csv_livre_bruto, file_name="6_tabela_interesse_dados_completos.csv", mime="text/csv", key="btn_download_livre_2")
+            st.download_button(label="📥 Baixar Tabela de Interesse Bruta (.csv)", data=csv_livre_bruto, file_name="6_tabela_interesse_dados_completos.csv", mime="text/csv", key="btn_download_livre_raw")
