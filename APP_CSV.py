@@ -32,7 +32,7 @@ def verificar_e_limpar_estado(chave_atual, valor_atual):
         st.session_state[f"prev_{chave_atual}"] = valor_atual
     elif st.session_state[f"prev_{chave_atual}"] != valor_atual:
         st.session_state[f"prev_{chave_atual}"] = valor_atual
-        for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios", "df_resultado_livre", "metricas_livre"]:
+        for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios", "df_resultado_livre", "metricas_livre", "df_resultado_livre_bruto"]:
             if k in st.session_state:
                 st.session_state[k] = None
 
@@ -40,7 +40,7 @@ def verificar_e_limpar_estado(chave_atual, valor_atual):
 verificar_e_limpar_estado("tipo_analise", tipo_analise)
 
 # Inicializa as variáveis globais de estado da sessão
-for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios", "df_resultado_livre", "metricas_livre"]:
+for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios", "df_resultado_livre", "metricas_livre", "df_resultado_livre_bruto"]:
     if k not in st.session_state:
         st.session_state[k] = None
 
@@ -178,7 +178,7 @@ if tipo_analise == "1 - Comparação por percentual (%)":
         if not relatorio_original.empty:
             linhas_excluidas = total_base - len(relatorio_original)    
             st.success(
-                f"Análise Concluída! Varremos {total_base} linhas, "f"excluímos {linhas_excluidas} registros contidos na faixa de {limite_inferior}% a {limite_superior}% "
+                f"Análise Concluída! Varremos {total_base} lines, "f"excluímos {linhas_excluidas} registros contidos na faixa de {limite_inferior}% a {limite_superior}% "
                 f"e mantivemos {len(relatorio_original)} registros consistentes."
             )
             btn_col1, btn_col2 = st.columns(2)
@@ -285,7 +285,7 @@ elif tipo_analise == "3 - Excluir por Valor Até (Teto)":
     if st.session_state.df_resultado_valor is not None:
         df_resultado_valor = st.session_state.df_resultado_valor
         m = st.session_state.metricas_valor
-        st.success(f"Filtro aplicado! Analisados {m['original']} registros, excluídos {m['excluido']} registros com valor até R$ {teto_num:,.2f}, restando {m['permanece']} registros.")
+        st.success(f"Filtro applied! Analisados {m['original']} registros, excluídos {m['excluido']} registros com valor até R$ {teto_num:,.2f}, restando {m['permanece']} registros.")
         st.subheader("Registros com valores acima do teto mantidos")
         st.dataframe(df_resultado_valor.head(100))
 
@@ -480,7 +480,7 @@ else:
 
                     df_final_filtrado = df_resultado_match[condicao_filtro].copy()
 
-                    # Estruturação visual final do dataframe de saída
+                    # 1. Estruturação do Relatório Analítico Consistente (Colunas controladas de métricas)
                     relatorio_exibicao = pd.DataFrame({
                         'Chave_Identificacao': df_final_filtrado[coluna_chave_livre],
                         f'Recente_{coluna_rec_escolhida}': df_final_filtrado['VALOR_ALVO_REC'],
@@ -488,7 +488,14 @@ else:
                         f'Resultado_Operacao': df_final_filtrado['Resultado_Analise']
                     })
 
+                    # 2. Estruturação da Tabela de Interesse Completa (Linhas brutas originais validadas)
+                    tabela_bruta_exibicao = df_final_filtrado.drop(
+                        columns=['CHAVE_ALINHA', 'VALOR_ALVO_REC', 'VALOR_ANTIGO_MAPEADO', 'Localizado_No_Antigo'], 
+                        errors='ignore'
+                    )
+
                     st.session_state.df_resultado_livre = relatorio_exibicao
+                    st.session_state.df_resultado_livre_bruto = tabela_bruta_exibicao
                     st.session_state.metricas_livre = {
                         "rec_total": len(df_rec_full),
                         "ant_total": len(df_ant_full),
@@ -498,14 +505,26 @@ else:
 
     if st.session_state.df_resultado_livre is not None:
         df_resultado_livre = st.session_state.df_resultado_livre
+        df_resultado_livre_bruto = st.session_state.df_resultado_livre_bruto
         m = st.session_state.metricas_livre
         
         st.success(
             f"Cruzamento concluído com sucesso! Lemos {m['rec_total']} linhas recentes e {m['ant_total']} linhas antigas. "
-            f"Identificamos {m['cruzados']} chaves coincidentes e geramos {m['filtrados']} registros de acordo com o operador selecionado."
+            f"Identificamos {m['cruzados']} chaves coincidentes e mantivemos {m['filtrados']} registros consistentes de acordo com a regra."
         )
-        st.subheader("Resultado do Processamento Livre de Dados")
-        st.dataframe(df_resultado_livre.head(100))
+        
+        btn_col1, btn_col2 = st.columns(2)
 
-        csv_livre = df_resultado_livre.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-        st.download_button(label="📥 Baixar Tabela de Cruzamento Customizada (.csv)", data=csv_livre, file_name="6_resultado_analise_livre_customizada.csv", mime="text/csv", key="btn_download_livre")
+        with btn_col1:
+            st.subheader("1. Relatório Analítico de Cruzamento")
+            st.dataframe(df_resultado_livre.head(100))
+
+            csv_livre = df_resultado_livre.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+            st.download_button(label="📥 Baixar Relatório Analítico (.csv)", data=csv_livre, file_name="6_relatorio_analise_livre.csv", mime="text/csv", key="btn_download_livre_1")
+            
+        with btn_col2:
+            st.subheader("2. Tabela de Interesse Validadas (Dados Completos)")
+            st.dataframe(df_resultado_livre_bruto.head(100))
+
+            csv_livre_bruto = df_resultado_livre_bruto.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+            st.download_button(label="📥 Baixar Tabela de Interesse Completa (.csv)", data=csv_livre_bruto, file_name="6_linhas_validadas_modo_livre.csv", mime="text/csv", key="btn_download_livre_2")
