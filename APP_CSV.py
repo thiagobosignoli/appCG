@@ -21,7 +21,7 @@ tipo_analise = st.sidebar.radio(
         "3 - Excluir por Valor Até (Teto)",
         "4 - Excluir por Data de atualização (ano)",
         "5 - Excluir por Arquivo de Benefícios",
-        "6 - Comparação Livre entre Colunas Dinâmicas"
+        "6 - Comparação Livre entre Colunas"
     ],
     key="tipo_analise_global"
 )
