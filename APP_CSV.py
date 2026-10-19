@@ -21,7 +21,7 @@ tipo_analise = st.sidebar.radio(
         "3 - Excluir por Valor Até (Teto)",
         "4 - Excluir por Data de atualização (ano)",
         "5 - Excluir por Arquivo de Benefícios",
-        "6 - Comparação Livre entre Colunas"
+        "6 - Comparação Livre entre Colunas Dinâmicas"
     ],
     key="tipo_analise_global"
 )
@@ -403,6 +403,10 @@ else:
     st.sidebar.subheader("Parâmetros do Cruzamento")
     coluna_chave_livre = st.sidebar.text_input("Nome da coluna de Inscrição / Chave comum", value="NUM_INSCRICAO", key="chave_livre").strip()
     
+    st.sidebar.subheader("Mapeamento de Alvos")
+    coluna_rec_escolhida = st.sidebar.text_input("Nome da coluna na Tabela Recente:", value="VLR_IMPOSTO", key="col_rec_livre_text").strip()
+    coluna_ant_escolhida = st.sidebar.text_input("Nome da coluna na Tabela Antiga:", value="VLR_IMPOSTO", key="col_ant_livre_text").strip()
+
     operacao_selecionada = st.sidebar.selectbox(
         "Tipo de comparação desejada:",
         ["Menor que (<)", "Maior que (>)", "Subtração (Recente - Antiga)", "Relação Percentual (%)", "Multiplicação (*)"],
@@ -415,32 +419,13 @@ else:
     with col2:
         arquivo_ant_livre = st.file_uploader("Upload da Tabela Antiga (CSV)", type=["csv"], key="upload_ant_livre")
 
-    # Mapeamento dinâmico das colunas baseado no upload dos arquivos
-    coluna_rec_escolhida = None
-    coluna_ant_escolhida = None
-
-    if arquivo_rec_livre and arquivo_ant_livre:
-        try:
-            # Leitura rápida para obter as colunas sem estourar a memória
-            df_rec_headers = ler_csv_seguro(arquivo_rec_livre)
-            df_ant_headers = ler_csv_seguro(arquivo_ant_livre)
-            
-            df_rec_headers.columns = df_rec_headers.columns.str.strip()
-            df_ant_headers.columns = df_ant_headers.columns.str.strip()
-
-            st.sidebar.subheader("Mapeamento de Alvos")
-            coluna_rec_escolhida = st.sidebar.selectbox("Coluna da Tabela Recente:", df_rec_headers.columns, key="col_rec_livre")
-            coluna_ant_escolhida = st.sidebar.selectbox("Coluna da Tabela Antiga:", df_ant_headers.columns, key="col_ant_livre")
-        except Exception:
-            st.sidebar.error("Erro ao ler cabeçalhos dos arquivos para listagem dinâmica.")
-
     botao_executar_livre = st.sidebar.button("⚡ Executar Análise Customizada")
 
     if botao_executar_livre:
         if not arquivo_rec_livre or not arquivo_ant_livre:
             st.sidebar.error("Por favor, suba ambas as tabelas para iniciar o cruzamento de dados.")
         elif not coluna_chave_livre or not coluna_rec_escolhida or not coluna_ant_escolhida:
-            st.sidebar.error("Verifique os parâmetros e certifique-se de escolher colunas válidas em ambos os arquivos.")
+            st.sidebar.error("Verifique os parâmetros e certifique-se de definir as colunas em ambos os campos de texto.")
         else:
             with st.spinner("Vinculando dados pelas chaves de sub-lote e calculando métricas..."):
                 df_rec_full = ler_csv_seguro(arquivo_rec_livre)
@@ -448,9 +433,13 @@ else:
 
                 df_rec_full.columns = df_rec_full.columns.str.strip()
                 df_ant_full.columns = df_ant_full.columns.str.strip()
-
+                
                 if coluna_chave_livre not in df_rec_full.columns or coluna_chave_livre not in df_ant_full.columns:
-                    st.error(f"Erro Crítico: A coluna chave '{coluna_chave_livre}' não foi localizada em um das tabelas.")
+                    st.error(f"Erro Crítico: A coluna chave '{coluna_chave_livre}' não foi localizada em uma das tabelas.")
+                elif coluna_rec_escolhida not in df_rec_full.columns:
+                    st.error(f"Erro Crítico: A coluna alvo recente '{coluna_rec_escolhida}' não existe no arquivo Recente.")
+                elif coluna_ant_escolhida not in df_ant_full.columns:
+                    st.error(f"Erro Crítico: A coluna alvo antiga '{coluna_ant_escolhida}' não existe no arquivo Antigo.")
                 else:
                     df_rec_full['CHAVE_ALINHA'] = normalizar_sublote(df_rec_full[coluna_chave_livre])
                     df_ant_full['CHAVE_ALINHA'] = normalizar_sublote(df_ant_full[coluna_chave_livre])
@@ -471,15 +460,15 @@ else:
                     v_rec = df_resultado_match['VALOR_ALVO_REC'].values
                     v_ant = df_resultado_match['VALOR_ANTIGO_MAPEADO'].values
 
-                    # Processamento condicional do motor aritmético baseado no selectbox
+                    # Processamento condicional do motor aritmético baseado no selectbox com filtros restritivos
                     if operacao_selecionada == "Menor que (<)":
                         condicao_filtro = (v_rec < v_ant)
-                        df_resultado_match['Resultado_Analise'] = "Recente Menor"
+                        df_resultado_match['Resultado_Analise'] = "Recente é Menor"
                     elif operacao_selecionada == "Maior que (>)":
                         condicao_filtro = (v_rec > v_ant)
-                        df_resultado_match['Resultado_Analise'] = "Recente Maior"
+                        df_resultado_match['Resultado_Analise'] = "Recente é Maior"
                     elif operacao_selecionada == "Subtração (Recente - Antiga)":
-                        condicao_filtro = np.ones_like(v_rec, dtype=bool)
+                        condicao_filtro = np.ones_like(v_rec, dtype=bool)  # Mantém todas as linhas
                         df_resultado_match['Resultado_Analise'] = np.round(v_rec - v_ant, 2)
                     elif operacao_selecionada == "Multiplicação (*)":
                         condicao_filtro = np.ones_like(v_rec, dtype=bool)
