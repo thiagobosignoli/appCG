@@ -16,11 +16,12 @@ st.sidebar.header("Parâmetros da Análise")
 tipo_analise = st.sidebar.radio(
     "Tipo de análise:",
     [
-        "Comparação por percentual (%)",
-        "Filtro por Parâmetro (Sim/Não)",
-        "Excluir por Valor Até (Teto)",
-        "Excluir por Data de atualização (ano)",
-        "Excluir por Arquivo de Benefícios"
+        "1 - Comparação por percentual (%)",
+        "2 - Filtro por Parâmetro (Sim/Não)",
+        "3 - Excluir por Valor Até (Teto)",
+        "4 - Excluir por Data de atualização (ano)",
+        "5 - Excluir por Arquivo de Benefícios",
+        "6 - Comparação Livre entre Colunas Dinâmicas"
     ],
     key="tipo_analise_global"
 )
@@ -31,7 +32,7 @@ def verificar_e_limpar_estado(chave_atual, valor_atual):
         st.session_state[f"prev_{chave_atual}"] = valor_atual
     elif st.session_state[f"prev_{chave_atual}"] != valor_atual:
         st.session_state[f"prev_{chave_atual}"] = valor_atual
-        for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios"]:
+        for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios", "df_resultado_livre", "metricas_livre"]:
             if k in st.session_state:
                 st.session_state[k] = None
 
@@ -39,7 +40,7 @@ def verificar_e_limpar_estado(chave_atual, valor_atual):
 verificar_e_limpar_estado("tipo_analise", tipo_analise)
 
 # Inicializa as variáveis globais de estado da sessão
-for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios"]:
+for k in ["relatorio_original", "relatorio_arquivo2_divergente", "total_base", "df_resultado_filtro", "metricas_filtro", "df_resultado_valor", "metricas_valor", "df_resultado_ano", "metricas_ano", "df_resultado_beneficios", "metricas_beneficios", "df_resultado_livre", "metricas_livre"]:
     if k not in st.session_state:
         st.session_state[k] = None
 
@@ -58,10 +59,14 @@ def ler_csv_seguro(arquivo_uploader):
             texto = bytes_data.decode('utf-8', errors='ignore')
             return pd.read_csv(io.StringIO(texto), sep=None, engine='python', dtype=str, on_bad_lines='skip')
 
+# Normalizador padrão de chaves cadastrais
+def normalizar_sublote(serie):
+    return (serie.astype(str).str.strip().str.replace(r'[\.\-\/]', '', regex=True).str.lstrip('0'))
+
 # ============================================================
 # MODO 1 - COMPARAÇÃO POR PERCENTUAL (Com Faixa de Exclusão)
 # ============================================================
-if tipo_analise == "Comparação por percentual (%)":
+if tipo_analise == "1 - Comparação por percentual (%)":
 
     st.sidebar.subheader("Faixa de Exclusão Percentual")
     col_inf, col_sup = st.sidebar.columns(2)
@@ -71,7 +76,7 @@ if tipo_analise == "Comparação por percentual (%)":
         limite_superior = st.number_input("Limite Superior (Y%)", min_value=0.0, max_value=100.0, value=4.6, step=0.1)
 
     incluir_novas = st.sidebar.checkbox(
-        "Incluir novas inscrições (Inexistentes no Ano Anterior)", 
+        "Refletir novas inscrições (Inexistentes no Ano Anterior)", 
         value=False,
         help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
     )
@@ -107,9 +112,6 @@ if tipo_analise == "Comparação por percentual (%)":
                 elif coluna_analise not in df_base.columns or coluna_analise not in df_comp.columns:
                     st.error(f"Erro Crítico: A coluna de valor '{coluna_analise}' não foi encontrada em um dos arquivos.")
                 else:
-                    def normalizar_sublote(serie):
-                        return (serie.astype(str).str.strip().str.replace(r'[\.\-\/]', '', regex=True).str.lstrip('0'))
-
                     df_base['CHAVE_ALINHA'] = normalizar_sublote(df_base[coluna_chave])
                     df_comp['CHAVE_ALINHA'] = normalizar_sublote(df_comp[coluna_chave])
 
@@ -174,7 +176,6 @@ if tipo_analise == "Comparação por percentual (%)":
         total_base = st.session_state.total_base
 
         if not relatorio_original.empty:
-           # Calcula a quantidade exata de registros excluídos na faixa
             linhas_excluidas = total_base - len(relatorio_original)    
             st.success(
                 f"Análise Concluída! Varremos {total_base} linhas, "f"excluímos {linhas_excluidas} registros contidos na faixa de {limite_inferior}% a {limite_superior}% "
@@ -208,7 +209,7 @@ if tipo_analise == "Comparação por percentual (%)":
 # ============================================================
 # MODO 2 - FILTRO POR PARÂMETRO (Sim/Não)
 # ============================================================
-elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
+elif tipo_analise == "2 - Filtro por Parâmetro (Sim/Não)":
     st.sidebar.subheader("Parâmetros do Filtro")
     coluna_filtro = st.sidebar.text_input("Nome da coluna de análise", value="FLG_HOUVE_DEPRECIACAO").strip()
     parametro_exclusao = st.sidebar.text_input("Parâmetro a excluir", value="S").strip()
@@ -252,7 +253,7 @@ elif tipo_analise == "Filtro por Parâmetro (Sim/Não)":
 # ============================================================
 # MODO 3 - EXCLUIR POR VALOR ATÉ (TETO NUMÉRICO)
 # ============================================================
-elif tipo_analise == "Excluir por Valor Até (Teto)":
+elif tipo_analise == "3 - Excluir por Valor Até (Teto)":
     st.sidebar.subheader("Parâmetros do Teto")
     coluna_valor_teto = st.sidebar.text_input("Nome da coluna de valor", value="VLR_VENAL_IMOVEL_TRIB").strip()
     teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0)
@@ -294,7 +295,7 @@ elif tipo_analise == "Excluir por Valor Até (Teto)":
 # ============================================================
 # MODO 4 - EXCLUIR POR ANO (DATA dd/mm/aaaa)
 # ============================================================
-elif tipo_analise == "Excluir por Data de atualização (ano)":
+elif tipo_analise == "4 - Excluir por Data de atualização (ano)":
     st.sidebar.subheader("Parâmetros de Data")
     coluna_data = st.sidebar.text_input("Nome da coluna de data (dd/mm/aaaa)", value="DTA_ULTIMA_ATUALIZACAO").strip()
     ano_excluir = st.sidebar.text_input("Digitar o Ano a excluir (aaaa)", value="2026").strip()
@@ -336,7 +337,7 @@ elif tipo_analise == "Excluir por Data de atualização (ano)":
 # ============================================================
 # MODO 5 - EXCLUIR POR ARQUIVO DE BENEFÍCIOS
 # ============================================================
-else:
+elif tipo_analise == "5 - Excluir por Arquivo de Benefícios":
     st.sidebar.subheader("Parâmetros de Benefícios")
     coluna_chave_beneficio = st.sidebar.text_input("Nome da coluna de Inscrição / Chave", value="NUM_INSCRICAO", key="chave_beneficios").strip()
 
@@ -367,9 +368,6 @@ else:
                 if coluna_chave_beneficio not in df_rec.columns or coluna_chave_beneficio not in df_ben.columns:
                     st.error(f"Erro Crítico: A coluna de inscrição '{coluna_chave_beneficio}' não foi encontrada em um dos arquivos.")
                 else:
-                    def normalizar_sublote(serie):
-                        return (serie.astype(str).str.strip().str.replace(r'[\.\-\/]', '', regex=True).str.lstrip('0'))
-
                     df_rec['CHAVE_ALINHA'] = normalizar_sublote(df_rec[coluna_chave_beneficio])
                     df_ben['CHAVE_ALINHA'] = normalizar_sublote(df_ben[coluna_chave_beneficio])
 
@@ -397,3 +395,128 @@ else:
 
         csv_beneficios = df_resultado_beneficios.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
         st.download_button(label="📥 Baixar Tabela Corrente Filtrada (.csv)", data=csv_beneficios, file_name="5_tabela_corrente_sem_beneficios.csv", mime="text/csv", key="btn_download_beneficios")
+
+# ============================================================
+# MODO 6 - COMPARAÇÃO LIVRE ENTRE COLUNAS DINÂMICAS
+# ============================================================
+else:
+    st.sidebar.subheader("Parâmetros do Cruzamento")
+    coluna_chave_livre = st.sidebar.text_input("Nome da coluna de Inscrição / Chave comum", value="NUM_INSCRICAO", key="chave_livre").strip()
+    
+    operacao_selecionada = st.sidebar.selectbox(
+        "Tipo de comparação desejada:",
+        ["Menor que (<)", "Maior que (>)", "Subtração (Recente - Antiga)", "Relação Percentual (%)", "Multiplicação (*)"],
+        key="operacao_livre"
+    )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        arquivo_rec_livre = st.file_uploader("Upload da Tabela Recente (CSV)", type=["csv"], key="upload_rec_livre")
+    with col2:
+        arquivo_ant_livre = st.file_uploader("Upload da Tabela Antiga (CSV)", type=["csv"], key="upload_ant_livre")
+
+    # Mapeamento dinâmico das colunas baseado no upload dos arquivos
+    coluna_rec_escolhida = None
+    coluna_ant_escolhida = None
+
+    if arquivo_rec_livre and arquivo_ant_livre:
+        try:
+            # Leitura rápida para obter as colunas sem estourar a memória
+            df_rec_headers = ler_csv_seguro(arquivo_rec_livre)
+            df_ant_headers = ler_csv_seguro(arquivo_ant_livre)
+            
+            df_rec_headers.columns = df_rec_headers.columns.str.strip()
+            df_ant_headers.columns = df_ant_headers.columns.str.strip()
+
+            st.sidebar.subheader("Mapeamento de Alvos")
+            coluna_rec_escolhida = st.sidebar.selectbox("Coluna da Tabela Recente:", df_rec_headers.columns, key="col_rec_livre")
+            coluna_ant_escolhida = st.sidebar.selectbox("Coluna da Tabela Antiga:", df_ant_headers.columns, key="col_ant_livre")
+        except Exception:
+            st.sidebar.error("Erro ao ler cabeçalhos dos arquivos para listagem dinâmica.")
+
+    botao_executar_livre = st.sidebar.button("⚡ Executar Análise Customizada")
+
+    if botao_executar_livre:
+        if not arquivo_rec_livre or not arquivo_ant_livre:
+            st.sidebar.error("Por favor, suba ambas as tabelas para iniciar o cruzamento de dados.")
+        elif not coluna_chave_livre or not coluna_rec_escolhida or not coluna_ant_escolhida:
+            st.sidebar.error("Verifique os parâmetros e certifique-se de escolher colunas válidas em ambos os arquivos.")
+        else:
+            with st.spinner("Vinculando dados pelas chaves de sub-lote e calculando métricas..."):
+                df_rec_full = ler_csv_seguro(arquivo_rec_livre)
+                df_ant_full = ler_csv_seguro(arquivo_ant_livre)
+
+                df_rec_full.columns = df_rec_full.columns.str.strip()
+                df_ant_full.columns = df_ant_full.columns.str.strip()
+
+                if coluna_chave_livre not in df_rec_full.columns or coluna_chave_livre not in df_ant_full.columns:
+                    st.error(f"Erro Crítico: A coluna chave '{coluna_chave_livre}' não foi localizada em um das tabelas.")
+                else:
+                    df_rec_full['CHAVE_ALINHA'] = normalizar_sublote(df_rec_full[coluna_chave_livre])
+                    df_ant_full['CHAVE_ALINHA'] = normalizar_sublote(df_ant_full[coluna_chave_livre])
+
+                    # Converte dados das colunas selecionadas em números tratáveis
+                    df_rec_full['VALOR_ALVO_REC'] = pd.to_numeric(df_rec_full[coluna_rec_escolhida].astype(str).str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
+                    df_ant_full['VALOR_ALVO_ANT'] = pd.to_numeric(df_ant_full[coluna_ant_escolhida].astype(str).str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
+
+                    df_ant_limpo = df_ant_full.drop_duplicates(subset=['CHAVE_ALINHA'])
+                    dict_valores_ant = dict(zip(df_ant_limpo['CHAVE_ALINHA'], df_ant_limpo['VALOR_ALVO_ANT']))
+
+                    # Filtra mantendo apenas registros que de fato coexistem em ambos arquivos
+                    df_rec_full['Localizado_No_Antigo'] = df_rec_full['CHAVE_ALINHA'].isin(dict_valores_ant.keys())
+                    df_resultado_match = df_rec_full[df_rec_full['Localizado_No_Antigo']].copy()
+
+                    df_resultado_match['VALOR_ANTIGO_MAPEADO'] = df_resultado_match['CHAVE_ALINHA'].map(dict_valores_ant)
+
+                    v_rec = df_resultado_match['VALOR_ALVO_REC'].values
+                    v_ant = df_resultado_match['VALOR_ANTIGO_MAPEADO'].values
+
+                    # Processamento condicional do motor aritmético baseado no selectbox
+                    if operacao_selecionada == "Menor que (<)":
+                        condicao_filtro = (v_rec < v_ant)
+                        df_resultado_match['Resultado_Analise'] = "Recente Menor"
+                    elif operacao_selecionada == "Maior que (>)":
+                        condicao_filtro = (v_rec > v_ant)
+                        df_resultado_match['Resultado_Analise'] = "Recente Maior"
+                    elif operacao_selecionada == "Subtração (Recente - Antiga)":
+                        condicao_filtro = np.ones_like(v_rec, dtype=bool)
+                        df_resultado_match['Resultado_Analise'] = np.round(v_rec - v_ant, 2)
+                    elif operacao_selecionada == "Multiplicação (*)":
+                        condicao_filtro = np.ones_like(v_rec, dtype=bool)
+                        df_resultado_match['Resultado_Analise'] = np.round(v_rec * v_ant, 2)
+                    else:  # Relação Percentual (%)
+                        condicao_filtro = np.ones_like(v_rec, dtype=bool)
+                        div_segura = np.divide((v_rec - v_ant), v_ant, out=np.zeros_like(v_ant, dtype=float), where=(v_rec != 0) & (v_ant != 0)) * 100.0
+                        df_resultado_match['Resultado_Analise'] = np.where((v_ant == 0) & (v_rec != 0), 100.0, np.where((v_ant == 0) & (v_rec == 0), 0.0, np.round(div_segura, 2)))
+
+                    df_final_filtrado = df_resultado_match[condicao_filtro].copy()
+
+                    # Estruturação visual final do dataframe de saída
+                    relatorio_exibicao = pd.DataFrame({
+                        'Chave_Identificacao': df_final_filtrado[coluna_chave_livre],
+                        f'Recente_{coluna_rec_escolhida}': df_final_filtrado['VALOR_ALVO_REC'],
+                        f'Antiga_{coluna_ant_escolhida}': df_final_filtrado['VALOR_ANTIGO_MAPEADO'],
+                        f'Resultado_Operacao': df_final_filtrado['Resultado_Analise']
+                    })
+
+                    st.session_state.df_resultado_livre = relatorio_exibicao
+                    st.session_state.metricas_livre = {
+                        "rec_total": len(df_rec_full),
+                        "ant_total": len(df_ant_full),
+                        "cruzados": len(df_resultado_match),
+                        "filtrados": len(df_final_filtrado)
+                    }
+
+    if st.session_state.df_resultado_livre is not None:
+        df_resultado_livre = st.session_state.df_resultado_livre
+        m = st.session_state.metricas_livre
+        
+        st.success(
+            f"Cruzamento concluído com sucesso! Lemos {m['rec_total']} linhas recentes e {m['ant_total']} linhas antigas. "
+            f"Identificamos {m['cruzados']} chaves coincidentes e geramos {m['filtrados']} registros de acordo com o operador selecionado."
+        )
+        st.subheader("Resultado do Processamento Livre de Dados")
+        st.dataframe(df_resultado_livre.head(100))
+
+        csv_livre = df_resultado_livre.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
+        st.download_button(label="📥 Baixar Tabela de Cruzamento Customizada (.csv)", data=csv_livre, file_name="6_resultado_analise_livre_customizada.csv", mime="text/csv", key="btn_download_livre")
