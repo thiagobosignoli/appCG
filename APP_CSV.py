@@ -84,7 +84,7 @@ if tipo_analise == "1 - Comparação por percentual (%)":
     coluna_chave = st.sidebar.text_input("Nome da coluna de Inscrição / Chave", value="NUM_INSCRICAO").strip()
     
     st.sidebar.subheader("Mapeamento de Alvos")
-    coluna_analise_rec = st.sidebar.text_input("Coluna na Tabela Recente (Nova):", value="VLR_IMPOSTO", key="col_rec_m1").strip()
+    coluna_analise_rec = st.sidebar.text_input("Coluna na Tabela Recente:", value="VLR_IMPOSTO", key="col_rec_m1").strip()
     coluna_analise_ant = st.sidebar.text_input("Coluna na Tabela Antiga:", value="VLR_IMPOSTO", key="col_ant_m1").strip()
 
     col1, col2 = st.columns(2)
