@@ -82,7 +82,10 @@ if tipo_analise == "1 - Comparação por percentual (%)":
     )
 
     coluna_chave = st.sidebar.text_input("Nome da coluna de Inscrição / Chave", value="NUM_INSCRICAO").strip()
-    coluna_analise = st.sidebar.text_input("Nome da coluna de Valor / Análise", value="VLR_IMPOSTO").strip()
+    
+    st.sidebar.subheader("Mapeamento de Alvos")
+    coluna_analise_rec = st.sidebar.text_input("Coluna na Tabela Recente (Nova):", value="VLR_IMPOSTO", key="col_rec_m1").strip()
+    coluna_analise_ant = st.sidebar.text_input("Coluna na Tabela Antiga:", value="VLR_IMPOSTO", key="col_ant_m1").strip()
 
     col1, col2 = st.columns(2)
     with col1:
@@ -97,8 +100,8 @@ if tipo_analise == "1 - Comparação por percentual (%)":
             st.sidebar.error("Por favor, faça o upload de ambos os arquivos CSV antes de executar.")
         elif limite_inferior > limite_superior:
             st.sidebar.error("Erro: O Limite Inferior não pode ser maior do que o Limite Superior.")
-        elif not coluna_chave or not coluna_analise:
-            st.sidebar.error("Por favor, preencha os nomes de ambas as colunas na barra lateral.")
+        elif not coluna_chave or not coluna_analise_rec or not coluna_analise_ant:
+            st.sidebar.error("Por favor, preencha os nomes de todas as colunas na barra lateral.")
         else:
             with st.spinner("Localizando inscrições e cruzando dados fiscais... Aguarde."):
                 df_base = ler_csv_seguro(arquivo_base)
@@ -109,14 +112,16 @@ if tipo_analise == "1 - Comparação por percentual (%)":
 
                 if coluna_chave not in df_base.columns or coluna_chave not in df_comp.columns:
                     st.error(f"Erro Crítico: A coluna de inscrição '{coluna_chave}' não foi encontrada em um dos arquivos.")
-                elif coluna_analise not in df_base.columns or coluna_analise not in df_comp.columns:
-                    st.error(f"Erro Crítico: A coluna de valor '{coluna_analise}' não foi encontrada em um dos arquivos.")
+                elif coluna_analise_rec not in df_base.columns:
+                    st.error(f"Erro Crítico: A coluna recente '{coluna_analise_rec}' não existe no arquivo Recente.")
+                elif coluna_analise_ant not in df_comp.columns:
+                    st.error(f"Erro Crítico: A coluna antiga '{coluna_analise_ant}' não existe no arquivo Antigo.")
                 else:
                     df_base['CHAVE_ALINHA'] = normalizar_sublote(df_base[coluna_chave])
                     df_comp['CHAVE_ALINHA'] = normalizar_sublote(df_comp[coluna_chave])
 
-                    df_base['Valor_Ano'] = pd.to_numeric(df_base[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
-                    df_comp['Valor_Ano_Menos_1'] = pd.to_numeric(df_comp[coluna_analise].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
+                    df_base['Valor_Ano'] = pd.to_numeric(df_base[coluna_analise_rec].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
+                    df_comp['Valor_Ano_Menos_1'] = pd.to_numeric(df_comp[coluna_analise_ant].str.replace(',', '.', regex=True), errors='coerce').fillna(0.0)
 
                     df_comp_limpo = df_comp.drop_duplicates(subset=['CHAVE_ALINHA'])
                     dict_valores_comp = dict(zip(df_comp_limpo['CHAVE_ALINHA'], df_comp_limpo['Valor_Ano_Menos_1']))
@@ -156,8 +161,8 @@ if tipo_analise == "1 - Comparação por percentual (%)":
                     relatorio_original_gerado = pd.DataFrame({
                         'Inscricao_Sublote': df_resultado[coluna_chave],
                         'Tipo_Inconsistencia': df_resultado['Ocorrencia'],
-                        'Valor_Ano_Recente': df_resultado['Valor_Ano'],
-                        'Valor_Ano_Antigo': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Valor_Comparar_Antigo'], "Inexistente"),
+                        f'Recente_{coluna_analise_rec}': df_resultado['Valor_Ano'],
+                        f'Antiga_{coluna_analise_ant}': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Valor_Comparar_Antigo'], "Inexistente"),
                         'Diferenca_Percentual': np.where(df_resultado['Localizado_No_Comp'], df_resultado['Variacao_%'].astype(str) + "%", "N/A")
                     })
 
@@ -469,15 +474,14 @@ else:
                         df_resultado_match['Resultado_Analise'] = "Recente é Maior"
                     elif operacao_selecionada == "Subtração (Recente - Antiga)":
                         condicao_filtro = np.ones_like(v_rec, dtype=bool)  # Mantém todas as linhas
-                        df_resultado_match['Resultado_Analise'] = np.round(v_rec - v_ant, 2).astype(str)
+                        df_resultado_match['Resultado_Analise'] = np.round(v_rec - v_ant, 2)
                     elif operacao_selecionada == "Multiplicação (*)":
                         condicao_filtro = np.ones_like(v_rec, dtype=bool)
-                        df_resultado_match['Resultado_Analise'] = np.round(v_rec * v_ant, 2).astype(str)
+                        df_resultado_match['Resultado_Analise'] = np.round(v_rec * v_ant, 2)
                     else:  # Relação Percentual (%)
                         condicao_filtro = np.ones_like(v_rec, dtype=bool)
                         div_segura = np.divide((v_rec - v_ant), v_ant, out=np.zeros_like(v_ant, dtype=float), where=(v_rec != 0) & (v_ant != 0)) * 100.0
-                        calc_pct = np.where((v_ant == 0) & (v_rec != 0), 100.0, np.where((v_ant == 0) & (v_rec == 0), 0.0, np.round(div_segura, 2)))
-                        df_resultado_match['Resultado_Analise'] = calc_pct.astype(str) + "%"
+                        df_resultado_match['Resultado_Analise'] = np.where((v_ant == 0) & (v_rec != 0), "100.0%", np.where((v_ant == 0) & (v_rec == 0), "0.0%", np.round(div_segura, 2).astype(str) + "%"))
 
                     df_final_filtrado = df_resultado_match[condicao_filtro].copy()
 
@@ -489,14 +493,14 @@ else:
                         f'Resultado_Operacao': df_final_filtrado['Resultado_Analise']
                     })
 
-                    # Tabela de Interesse com os dados brutos completos correspondentes
-                    tabela_bruta_final = df_final_filtrado.drop(
+                    # Estruturação visual final da tabela de interesse bruta
+                    tabela_bruta_exibicao = df_final_filtrado.drop(
                         columns=['CHAVE_ALINHA', 'VALOR_ALVO_REC', 'VALOR_ALVO_ANT', 'Localizado_No_Antigo', 'VALOR_ANTIGO_MAPEADO', 'Resultado_Analise'], 
                         errors='ignore'
                     )
 
                     st.session_state.df_resultado_livre = relatorio_exibicao
-                    st.session_state.df_resultado_livre_bruto = tabela_bruta_final
+                    st.session_state.df_resultado_livre_bruto = tabela_bruta_exibicao
                     st.session_state.metricas_livre = {
                         "rec_total": len(df_rec_full),
                         "ant_total": len(df_ant_full),
@@ -517,13 +521,13 @@ else:
         btn_col1, btn_col2 = st.columns(2)
         
         with btn_col1:
-            st.subheader("1. Relatório Analítico de Operação")
+            st.subheader("1. Relatório Analítico de Cruzamento")
             st.dataframe(df_resultado_livre.head(100))
             csv_livre = df_resultado_livre.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-            st.download_button(label="📥 Baixar Relatório de Operação (.csv)", data=csv_livre, file_name="6_relatorio_operacao_customizada.csv", mime="text/csv", key="btn_download_livre_rep")
+            st.download_button(label="📥 Baixar Relatório de Cruzamento (.csv)", data=csv_livre, file_name="6_relatorio_analise_livre.csv", mime="text/csv", key="btn_download_livre_1")
             
         with btn_col2:
-            st.subheader("2. Tabela de Interesse (Dados Completos)")
+            st.subheader("2. Tabela de Interesse (Dados Brutos Completos)")
             st.dataframe(df_resultado_livre_bruto.head(100))
             csv_livre_bruto = df_resultado_livre_bruto.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-            st.download_button(label="📥 Baixar Tabela Completa Filtrada (.csv)", data=csv_livre_bruto, file_name="6_tabela_interesse_dados_completos.csv", mime="text/csv", key="btn_download_livre_bruto")
+            st.download_button(label="📥 Baixar Tabela de Interesse Completa (.csv)", data=csv_livre_bruto, file_name="6_tabela_interesse_dados_completos.csv", mime="text/csv", key="btn_download_livre_2")
