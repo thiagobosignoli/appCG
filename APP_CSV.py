@@ -550,4 +550,4 @@ else:
             st.subheader("2. Tabela de Interesse (Dados Brutos Completos)")
             st.dataframe(df_resultado_livre_bruto.head(100))
             csv_livre_bruto = df_resultado_livre_bruto.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
-            st.download_button(label="📥 Baixar Tabela de Interesse Bruta (.csv)", data=csv_livre_bruto, file_name="6_tabela_interesse_dados_completos.csv", mime="text/csv", key="btn_download_livre_raw")
+            st.download_button(label="📥 Baixar Tabela de Interesse completa(.csv)", data=csv_livre_bruto, file_name="6_tabela_interesse_dados_completos.csv", mime="text/csv", key="btn_download_livre_raw")
