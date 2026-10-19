@@ -547,7 +547,7 @@ else:
             st.download_button(label="📥 Baixar Relatório Customizado (.csv)", data=csv_livre, file_name="6_relatorio_operacao_customizada.csv", mime="text/csv", key="btn_download_livre_rep")
             
         with btn_col2:
-            st.subheader("2. Resultado da Tabela de Interesse )")
+            st.subheader("2. Resultado da Tabela de Interesse")
             st.dataframe(df_resultado_livre_bruto.head(100))
             csv_livre_bruto = df_resultado_livre_bruto.to_csv(index=False, sep=';', encoding='utf-8-sig').encode('utf-8-sig')
             st.download_button(label="📥 Baixar Tabela de Interesse completa(.csv)", data=csv_livre_bruto, file_name="6_tabela_interesse_dados_completos.csv", mime="text/csv", key="btn_download_livre_raw")
