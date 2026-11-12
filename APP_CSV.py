@@ -93,11 +93,7 @@ if tipo_analise == "1 - Comparação por percentual (%)":
     with col_sup:
         limite_superior = st.number_input("Limite Superior (Y%)", min_value=0.0, max_value=100.0, value=4.6, step=0.1)
 
-    incluir_novas = st.sidebar.checkbox(
-        "Refletir novas inscrições (Inexistentes no Ano Anterior)", 
-        value=False,
-        help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado."
-    )
+    incluir_novas = st.sidebar.checkbox("Refletir novas inscrições (Inexistentes no Ano Anterior)",value=False, help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado.")
 
     coluna_chave = st.sidebar.text_input("Nome da coluna de Inscrição / Chave", value="NUM_INSCRICAO").strip()
     
@@ -279,7 +275,7 @@ elif tipo_analise == "2 - Filtro por Parâmetro (Sim/Não)":
 elif tipo_analise == "3 - Excluir por Valor Até (Teto)":
     st.sidebar.subheader("Parâmetros do Teto")
     coluna_valor_teto = st.sidebar.text_input("Nome da coluna de valor", value="VLR_VENAL_IMOVEL_TRIB").strip()
-    teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0)
+    teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0,help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado.")
 
     arquivo_teto = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo3")
     if arquivo_teto:
