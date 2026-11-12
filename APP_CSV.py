@@ -280,7 +280,6 @@ elif tipo_analise == "3 - Excluir por Valor Até (Teto)":
     st.sidebar.subheader("Parâmetros do Teto")
     coluna_valor_teto = st.sidebar.text_input("Nome da coluna de valor", value="VLR_VENAL_IMOVEL_TRIB").strip()
     teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0)
-    "
 
     arquivo_teto = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo3")
     if arquivo_teto:
