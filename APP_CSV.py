@@ -275,7 +275,7 @@ elif tipo_analise == "2 - Filtro por Parâmetro (Sim/Não)":
 elif tipo_analise == "3 - Excluir por Valor Até (Teto)":
     st.sidebar.subheader("Parâmetros do Teto")
     coluna_valor_teto = st.sidebar.text_input("Nome da coluna de valor", value="VLR_VENAL_IMOVEL_TRIB").strip()
-    teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0,help="Se marcado, mantém na tabela final os registros novos que não possuem histórico no passado.")
+    teto_num = st.sidebar.number_input("Excluir valores até (R$)", min_value=0.0, value=90000.0, step=1000.0,help="Isenção até 14946 UFMs.")
 
     arquivo_teto = st.file_uploader("Upload da Tabela para análise (CSV)", type=["csv"], key="upload_modo3")
     if arquivo_teto:
