@@ -340,13 +340,18 @@ elif tipo_analise == "4 - Excluir por Data de atualização (ano)":
                 if coluna_data not in df_data.columns:
                     st.error(f"Erro Crítico: A coluna '{coluna_data}' não foi encontrada.")
                 else:
-                    anos_extraidos = df_data[coluna_data].astype(str).str.strip().str.slice(-4)
+                    # Extrai os 4 dígitos do ano independentemente de horário ou formato
+                    anos_extraidos = df_data[coluna_data].astype(str).str.extract(r'((?:19|20)\d{2})', expand=False)
+                    
                     registros_excluir = (anos_extraidos == ano_excluir)
                     df_resultado_data_gerado = df_data[~registros_excluir].copy()
 
                     st.session_state.df_resultado_ano = df_resultado_data_gerado
-                    st.session_state.metricas_ano = {"original": len(df_data), "excluido": registros_excluir.sum(), "permanece": len(df_resultado_data_gerado)}
-
+                    st.session_state.metricas_ano = {
+                        "original": len(df_data),
+                        "excluido": int(registros_excluir.sum()),
+                        "permanece": len(df_resultado_data_gerado)
+                    }
     if st.session_state.df_resultado_ano is not None:
         df_resultado_ano = st.session_state.df_resultado_ano
         m = st.session_state.metricas_ano
